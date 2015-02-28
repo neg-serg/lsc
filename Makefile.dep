@@ -1,0 +1,19 @@
+lsc: main.c fbuf.h fp.h time.h conf.h filevercmp.h modes.h size.h \
+ stat.h type.h util.h args.h lscolors.h
+lsc: filevercmp.c filevercmp.h util.h
+lsc: stat.c fbuf.h filevercmp.h time.h util.h stat.h args.h
+lsc: size.c conf.h fbuf.h fp.h size.h
+lsc: args.c filevercmp.h stat.h util.h args.h sort/sort.h \
+ sort/sort_common.h
+lsc: util.c util.h
+lsc: time.c util.h fbuf.h time.h conf.h
+lsc: type.c fbuf.h modes.h type.h
+lsc: lscolors.c colorh.h ht.h genht/ht.h genht/ht_inlines.h type.h \
+ util.h xxhash/xxhash.h lscolors.h
+lsc: modes.c conf.h fbuf.h modes.h
+lsc: ht.c ht.h genht/ht.h genht/ht_inlines.h genht/ht.c
+lsc: xxhash/xxhash.c xxhash/xxhash.h
+lsc: colorh.c type.h colorh.h
+lsc: fbuf.c fbuf.h util.h
+lsc: fp.c fbuf.h fp.h
+lsc: conf.c conf.h

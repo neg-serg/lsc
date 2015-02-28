@@ -1,0 +1,7 @@
+*.a
+*.so
+*.lo
+*.o
+lsc
+lsc_clang
+genht-svn

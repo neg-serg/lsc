@@ -1,0 +1,35 @@
+%{
+#include <sys/types.h>
+#include <string.h>
+#include "type.h"
+%}
+struct ind_name {
+	const char* name;
+	int code;
+};
+%%
+lc, IND_LEFT
+rc, IND_RIGHT
+ec, IND_END
+rs, IND_RESET
+no, IND_NORM
+fi, IND_FILE
+di, IND_DIR
+ln, IND_LINK
+pi, IND_FIFO
+so, IND_SOCK
+bd, IND_BLK
+cd, IND_CHR
+mi, IND_MISSING
+or, IND_ORPHAN
+ex, IND_EXEC
+do, IND_DOOR
+su, IND_SETUID
+sg, IND_SETGID
+st, IND_STICKY
+ow, IND_OTHERWRITABLE
+tw, IND_STICKYOTHERWRITABLE
+ca, IND_CAP
+mh, IND_MULTIHARDLINK
+cl, IND_CLRTOEOL
+%%
