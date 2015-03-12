@@ -1,4 +1,7 @@
+#include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdnoreturn.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -11,10 +14,10 @@ int suffix(const char *s, size_t len);
 int order(char c);
 int verrevcmp(const char *a, size_t alen, const char *b, size_t blen);
 
-inline bool c_isdigit(char c) { return (unsigned char)(c - '0') < 10; }
-inline bool c_isalpha(char c) { return (unsigned char)((c | 32) - 'a') < 26; }
+bool c_isdigit(char c) { return (unsigned char)(c - '0') < 10; }
+bool c_isalpha(char c) { return (unsigned char)((c | 32) - 'a') < 26; }
 
-inline int suffix(const char *s, size_t len) {
+int suffix(const char *s, size_t len) {
 	bool read_alphat = false;
 	size_t matched = 0;
 	size_t j = 0;
@@ -34,7 +37,7 @@ inline int suffix(const char *s, size_t len) {
 	return len - matched;
 }
 
-inline int order(char c) {
+int order(char c) {
 	if (c_isalpha(c)) {
 		return (int)c;
 	} else if (c_isdigit(c)) {
@@ -45,61 +48,43 @@ inline int order(char c) {
 	return (int)c + 256;
 }
 
-inline int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
-	int first_diff;
-	size_t ai = 0, bi = 0;
-	int ac, bc;
-	while (ai < alen || bi < blen) {
-		first_diff = 0;
-		while ((ai < alen && !c_isdigit(a[ai])) ||
-			   (bi < blen && !c_isdigit(b[bi]))) {
-			ac = 0;
-			bc = 0;
-			if (ai < alen) {
-				ac = order(a[ai]);
-			}
-			if (bi < blen) {
-				bc = order(b[bi]);
-			}
 
+int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
+	size_t ai = 0, bi = 0;
+	while (ai < alen || bi < blen) {
+		int first_diff= 0;
+		while ((ai < alen && !c_isdigit(a[ai])) ||
+		       (bi < blen && !c_isdigit(b[bi]))) {
+			int ac = (ai == alen) ? 0 : order (a[ai]);
+			int bc = (bi == blen) ? 0 : order (b[bi]);
 			if (ac != bc) {
 				return ac - bc;
 			}
-
 			ai++;
 			bi++;
 		}
-		while (ai < alen && a[ai] == '0') {
-			ai++;
-		}
-		while (bi < blen && b[bi] == '0') {
-			bi++;
-		}
+		while (ai < alen && a[ai] == '0') { ai++; }
+		while (bi < blen && b[bi] == '0') { bi++; }
 		while (ai < alen && c_isdigit(a[ai]) &&
-			   bi < blen && c_isdigit(b[bi])) {
+		       bi < blen && c_isdigit(b[bi])) {
 			if (first_diff == 0) {
 				first_diff = (int)a[ai] - (int)b[bi];
 			}
 			ai++;
 			bi++;
 		}
-
-		if (c_isdigit(a[ai])) {
-			return 1;
-		}
-		if (c_isdigit(b[bi])) {
-			return -1;
-		}
-		if (first_diff != 0) {
-			return first_diff;
-		}
+		if (c_isdigit(a[ai])) { return  1; }
+		if (c_isdigit(b[bi])) { return -1; }
+		if (first_diff) { return first_diff; }
 	}
-
 	return 0;
 }
 
-inline struct suf_indexed new_suf_indexed(const char *s) {
-	const size_t len = strlen(s);
+struct suf_indexed new_suf_indexed(const char *s) {
+	return new_suf_indexed_len(s, strlen(s));
+}
+
+struct suf_indexed new_suf_indexed_len(const char *s, size_t len) {
 	if (len != 0 && s[0] == '.') {
 		return (struct suf_indexed) {
 			.str = s,
@@ -115,11 +100,11 @@ inline struct suf_indexed new_suf_indexed(const char *s) {
 	}
 }
 
-inline int filevercmp(struct suf_indexed a, struct suf_indexed b) {
+int filevercmp(struct suf_indexed a, struct suf_indexed b) {
 	int scmp = strcmp((char *)a.str, (char *)b.str);
-	if (unlikely(scmp == 0)) { return 0; }
-	if (unlikely(*a.str == '\0')) { return -1; }
-	if (unlikely(*b.str == '\0')) { return  1; }
+	if (scmp == 0) { return 0; }
+	if (*a.str == '\0') { return -1; }
+	if (*b.str == '\0') { return  1; }
 
 	// Special case for hidden files
 	if (a.str[0] == '.') {
