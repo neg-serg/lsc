@@ -80,11 +80,11 @@ int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
 	return 0;
 }
 
-struct suf_indexed new_suf_indexed(const char *s) {
+inline struct suf_indexed new_suf_indexed(const char *s) {
 	return new_suf_indexed_len(s, strlen(s));
 }
 
-struct suf_indexed new_suf_indexed_len(const char *s, size_t len) {
+inline struct suf_indexed new_suf_indexed_len(const char *s, size_t len) {
 	if (len != 0 && s[0] == '.') {
 		return (struct suf_indexed) {
 			.str = s,

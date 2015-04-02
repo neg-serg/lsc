@@ -263,16 +263,17 @@ char *clean_right(char *path) []byte {
 */
 
 // guarantees that returned string is size long
-static const char *ls_readlink(int dirfd, char *name, size_t size) {
+static int ls_readlink(int dirfd, char *name, size_t size, struct suf_indexed *out) {
 	char *buf = xmalloc(size+1, sizeof(char)); // allocate length + \0
 	ssize_t n = readlinkat(dirfd, name, buf, size);
 	if (n == -1) {
 		free(buf);
-		return NULL;
+		return -1;
 	}
-	assert((size_t)n == size); // XXX: symlink grew, handle this better
-	buf[size] = '\0';
-	return buf;
+	assert((size_t)n <= size); // XXX: symlink grew, handle this better
+	buf[n] = '\0';
+	*out = new_suf_indexed_len(buf, n);
+	return 0;
 }
 
 // stat writes a file_info describing the named file
@@ -293,12 +294,11 @@ static int ls_stat(int dirfd, char *name, struct file_info *out) {
 	};
 
 	if (S_ISLNK(out->mode)) {
-		const char *ln = ls_readlink(dirfd, name, (size_t)st.st_size);
-		if (ln == NULL) {
+		int ln = ls_readlink(dirfd, name, (size_t)st.st_size, &(out->linkname));
+		if (ln == -1) {
 			out->linkok = false;
 			return 0;
 		}
-		out->linkname = new_suf_indexed_len(ln, st.st_size);
 		if (fstatat(dirfd, name, &st, 0) == -1) {
 			out->linkok = false;
 			return 0;
