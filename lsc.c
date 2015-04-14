@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include "xxhash/xxhash.h"
@@ -310,6 +311,10 @@ static int ls_stat(int dirfd, char *name, struct file_info *out) {
 }
 
 static int ls_readdir(struct file_list *l, char *name) {
+	for (size_t l = strlen(name)-1; name[l] == '/'; l--) {
+		name[l]='\0';
+	}
+	int err = 0;
 	DIR *dir = opendir(name);
 	if (dir == NULL) { return -1; }
 	int fd = dirfd(dir);
@@ -326,18 +331,24 @@ static int ls_readdir(struct file_list *l, char *name) {
 			assert(!size_mul_overflow(l->cap, 2, &l->cap));
 			l->data = xrealloc(l->data, l->cap, sizeof(struct file_info));
 		}
-		if (ls_stat(fd, strdup(dn), l->data+l->len) == -1) {
-			closedir(dir); // ignore failure
-			return -1;
+		char *n = strdup(dn);
+		if (ls_stat(fd, n, l->data+l->len) == -1) {
+			free(n);
+			fprintf(stderr, "lsc: cannot access %s/%s: %s\n", name, dn, strerror(errno));
+			err = -1; // Return -1 on errors
+			continue;
 		}
 		l->len++;
 	}
-	return closedir(dir);
+	if (closedir(dir) == -1) {
+		return -1;
+	}
+	return err;
 }
 
 // get info about file/directory name
 // bufsize must be at least 1
-static void ls(struct file_list *l, char *name) {
+int ls(struct file_list *l, char *name) {
 	char *s = strdup(name); // make freeing simpler
 	if (ls_stat(AT_FDCWD, s, l->data) == -1) {
 		free(s);
@@ -346,11 +357,12 @@ static void ls(struct file_list *l, char *name) {
 	if (S_ISDIR(l->data->mode)) {
 		free(s);
 		if (ls_readdir(l, name) == -1) {
-			die_errno();
+			return -1;
 		}
-		return;
+		return 0;
 	}
 	l->len = 1;
+	return 0;
 }
 
 //
@@ -949,9 +961,11 @@ int main(int argc, char **argv) {
 	fb_t out;
 	fb_init(&out, STDOUT_FILENO);
 	uint64_t now = current_time();
+	int err = EXIT_SUCCESS;
 	if (colorize) {
 		for (size_t i = 0; i < opts.restc; i++) {
-			ls(&l, opts.rest[i]);
+			if (ls(&l, opts.rest[i]) == -1)
+				err = EXIT_FAILURE;
 			fi_tim_sort(l.data, l.len);
 			for (size_t j = 0; j < l.len; j++) {
 				strmode(&out, l.data[j].mode, cModes);
@@ -966,7 +980,8 @@ int main(int argc, char **argv) {
 		};
 	} else {
 		for (size_t i = 0; i < opts.restc; i++) {
-			ls(&l, opts.rest[i]);
+			if (ls(&l, opts.rest[i]) == -1)
+				err = EXIT_FAILURE;
 			fi_tim_sort(l.data, l.len);
 			for (size_t j = 0; j < l.len; j++) {
 				strmode(&out, l.data[j].mode, nModes);
@@ -983,4 +998,5 @@ int main(int argc, char **argv) {
 	fb_flush(&out);
 	file_list_free(&l);
 	//fb_free(&out);
+	return err;
 }
