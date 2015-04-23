@@ -632,7 +632,6 @@ static enum indicator color_type(mode_t mode) {
 	}
 }
 
-
 //
 // Time printer
 //
@@ -949,8 +948,6 @@ static void name_nc(fb_t *out, const struct file_info *f) {
 		}
 	}
 }
-
-
 
 int main(int argc, char **argv) {
 	parse_args(argc, argv);

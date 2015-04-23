@@ -13,7 +13,6 @@
 #undef static
 #endif
 
-
 #define HT_MINSIZE 8
 #define HT_MAXSIZE (1U << 31)
 
@@ -232,4 +231,3 @@ void HT(delentry)(HT(t) *ht, HT(entry_t) *entry) {
 	ht->used--;
 	setdeleted(entry);
 }
-

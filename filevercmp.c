@@ -48,7 +48,6 @@ int order(char c) {
 	return (int)c + 256;
 }
 
-
 int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
 	size_t ai = 0, bi = 0;
 	while (ai < alen || bi < blen) {

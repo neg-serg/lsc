@@ -200,7 +200,7 @@ int fb_fp(fb_t *f, long double y, int w, int p) {
 		if (z>d+1) z=d+1;
 	}
 	for (; z>a && !z[-1]; z--);
-	
+
 	l = 1 + p + p;
 	if (e>0) l+=e;
 
