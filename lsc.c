@@ -281,6 +281,7 @@ static int ls_readlink(int dirfd, char *name, size_t size, struct suf_indexed *o
 static int ls_stat(int dirfd, char *name, struct file_info *out) {
 	struct stat st;
 	if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) == -1) {
+		fprintf(stderr, "lsc: %s: %s\n", name, strerror(errno));
 		return -1;
 	}
 
@@ -311,14 +312,20 @@ static int ls_stat(int dirfd, char *name, struct file_info *out) {
 }
 
 static int ls_readdir(struct file_list *l, char *name) {
-	for (size_t l = strlen(name)-1; name[l] == '/'; l--) {
+	for (size_t l = strlen(name)-1; name[l] == '/' && l>1; l--) {
 		name[l]='\0';
 	}
 	int err = 0;
 	DIR *dir = opendir(name);
-	if (dir == NULL) { return -1; }
+	if (dir == NULL) {
+		fprintf(stderr, "lsc: %s: %s\n", name, strerror(errno));
+		return -1;
+	}
 	int fd = dirfd(dir);
-	if (fd == -1) { return -1; }
+	if (fd == -1) {
+		fprintf(stderr, "lsc: %s: %s\n", name, strerror(errno));
+		return -1;
+	}
 	struct dirent *dent;
 	while ((dent = readdir(dir)) != NULL) {
 		char *dn = dent->d_name;
@@ -352,7 +359,7 @@ int ls(struct file_list *l, char *name) {
 	char *s = strdup(name); // make freeing simpler
 	if (ls_stat(AT_FDCWD, s, l->data) == -1) {
 		free(s);
-		die_errno();
+		_exit(EXIT_FAILURE);
 	}
 	if (S_ISDIR(l->data->mode)) {
 		free(s);
