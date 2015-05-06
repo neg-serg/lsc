@@ -543,7 +543,7 @@ static bool color_sym_target = false;
 static char *lsc_env;
 static ssht_t *ht;
 
-static void parse_ls_color() {
+static void parse_ls_color(void) {
 	lsc_env = getenv("LS_COLORS");
 	ht = ssht_alloc(keyhash, keyeq);
 	bool eq = false;

@@ -19,7 +19,7 @@
 // Try to write error to stderr without allocating
 #define werr_s(s) write_error((s), sizeof(s)-1)
 
-void write_error(const char *s, size_t len) {
+static void write_error(const char *s, size_t len) {
 	size_t c = 0;
 	while (len-c > 0) {
 		ssize_t n = write(STDERR_FILENO, s+c, len-c);
@@ -28,14 +28,14 @@ void write_error(const char *s, size_t len) {
 	}
 }
 
-noreturn void die(const char *s) {
+void die(const char *s) {
 	werr_s("lsc: ");
 	write_error(s, strlen(s));
 	werr_s("\n");
 	_exit(EXIT_FAILURE);
 }
 
-noreturn void die_errno(void) {
+void die_errno(void) {
 	char err[256];
 	int r = strerror_r(errno, err, 256);
 	if (r != 0) {

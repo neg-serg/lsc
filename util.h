@@ -2,10 +2,10 @@
 #define LSC_UTIL_H
 
 // Die after printing message for errno
-noreturn void die_errno(void);
+void die_errno(void);
 
 // Die after printing message
-noreturn void die(const char *s);
+void die(const char *s);
 
 // Die if malloc fails
 void *xmalloc(size_t nmemb, size_t size);
