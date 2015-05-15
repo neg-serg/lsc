@@ -1,28 +1,29 @@
 #define _GNU_SOURCE
 
+#include <assert.h>
 #include <dirent.h>
-#include <assert.h>
-#include <assert.h>
-#include <stdint.h>
-#include <stdnoreturn.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include <errno.h>
 #include <unistd.h>
 
 #include "xxhash/xxhash.h"
+
+#define PROGRAM_NAME "lsc"
 
 #include "filevercmp.h"
 #include "ht.h"
 #include "util.h"
 #include "fbuf.h"
 #include "config.h"
+
 
 enum type_str_index {
 	i_none,     // Nothing else applies
@@ -46,20 +47,22 @@ enum type_str_index {
 	i_unknown,  // Anything else
 };
 
-static char usage[] = "Usage: lsc [option ...] [file ...]\n"
-	"  -C when  use colours (never, always or auto)\n"
-	"  -F       append file type indicator\n"
-	"  -a       show all files\n"
-	"  -c       use ctime\n"
-	"  -r       reverse sort\n"
-	"  -g       group directories first\n"
-	"  -S       sort by size\n"
-	"  -t       sort by time\n"
-	"  -h       show this help";
+#define usage \
+"Usage: " PROGRAM_NAME " [option ...] [file ...]\n" \
+"  -C when  use colours (never, always or auto)\n" \
+"  -F       append file type indicator\n" \
+"  -a       show all files\n" \
+"  -c       use ctime\n" \
+"  -r       reverse sort\n" \
+"  -g       group directories first\n" \
+"  -S       sort by size\n" \
+"  -t       sort by time\n" \
+"  -h       show this help"
 
 struct file_info {
 	struct suf_indexed name;
 	struct suf_indexed linkname;
+	char *dn;
 	size_t size;
 	mode_t mode;
 	mode_t linkmode;
@@ -140,7 +143,7 @@ static int sorter(const struct file_info *a, const struct file_info *b) {
 static void parse_args(int argc, char **argv) {
 	opts.color = COLOR_AUTO;
 	opts.sort = SORT_FVER;
-	opts.rest = xmalloc((size_t)argc, sizeof(char *));
+	opts.rest = xmallocr((size_t)argc, sizeof(char *));
 	size_t restc = 0;
 
 	for (int i = 1; i < argc; i++) {
@@ -189,8 +192,8 @@ static void parse_args(int argc, char **argv) {
 				if (s[1] == '\0') {
 					if (i+1 < argc) {
 						// No argument
-						fputs("option '-C' needs an argument", stderr);
-						die(usage);
+						fputs("option '-C' needs an argument\n" usage, stderr);
+						die();
 					}
 					// Argument is next one
 					use = argv[i+1];
@@ -209,15 +212,17 @@ static void parse_args(int argc, char **argv) {
 					opts.color = COLOR_AUTO;
 				} else {
 					fprintf(stderr, "invalid argument to option '-C': \"%s\"\n", use);
-					die(usage);
+					fputs(usage, stderr);
 				}
 
 				break;
 			case 'h':
-				die(usage);
+				fputs(usage, stderr);
+				die();
 			default:
 				fprintf(stderr, "unsupported option '%c'\n", f);
-				die(usage);
+				fputs(usage, stderr);
+				die();
 			}
 		}
 	}
@@ -233,7 +238,7 @@ static void parse_args(int argc, char **argv) {
 //
 
 static void file_list_init(struct file_list *fl) {
-	fl->data = xmalloc(128, sizeof(struct file_info));
+	fl->data = xmallocr(128, sizeof(struct file_info));
 	fl->cap = 128;
 	fl->len = 0;
 }
@@ -265,7 +270,7 @@ char *clean_right(char *path) []byte {
 
 // guarantees that returned string is size long
 static int ls_readlink(int dirfd, char *name, size_t size, struct suf_indexed *out) {
-	char *buf = xmalloc(size+1, sizeof(char)); // allocate length + \0
+	char *buf = xmalloc(size+1); // allocate length + \0
 	ssize_t n = readlinkat(dirfd, name, buf, size);
 	if (n == -1) {
 		free(buf);
@@ -278,22 +283,20 @@ static int ls_readlink(int dirfd, char *name, size_t size, struct suf_indexed *o
 }
 
 // stat writes a file_info describing the named file
-static int ls_stat(int dirfd, char *name, struct file_info *out) {
+static inline int ls_stat(int dirfd, char *name, struct file_info *out) {
 	struct stat st;
 	if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) == -1) {
-		fprintf(stderr, "lsc: %s: %s\n", name, strerror(errno));
+		fprintf(stderr, PROGRAM_NAME ": %s: %s\n", name, strerror(errno));
 		return -1;
 	}
 
-	*out = (struct file_info) {
-		.name = new_suf_indexed(name),
-		.size = (size_t)st.st_size,
-		.mode = st.st_mode,
-		.time = opts.ctime ? st.st_ctim.tv_sec : st.st_mtim.tv_sec,
-		.linkok = true,
-		.linkname = {NULL, 0, 0},
-		.linkmode = 0,
-	};
+	out->name = new_suf_indexed(name);
+	out->size = (size_t)st.st_size;
+	out->mode = st.st_mode;
+	out->time = opts.ctime ? st.st_ctim.tv_sec : st.st_mtim.tv_sec;
+	out->linkok = true;
+	out->linkname = (struct suf_indexed) {0};
+	out->linkmode = 0;
 
 	if (S_ISLNK(out->mode)) {
 		int ln = ls_readlink(dirfd, name, (size_t)st.st_size, &(out->linkname));
@@ -318,12 +321,12 @@ static int ls_readdir(struct file_list *l, char *name) {
 	int err = 0;
 	DIR *dir = opendir(name);
 	if (dir == NULL) {
-		fprintf(stderr, "lsc: %s: %s\n", name, strerror(errno));
+		fprintf(stderr, PROGRAM_NAME ": %s: %s\n", name, strerror(errno));
 		return -1;
 	}
 	int fd = dirfd(dir);
 	if (fd == -1) {
-		fprintf(stderr, "lsc: %s: %s\n", name, strerror(errno));
+		fprintf(stderr, PROGRAM_NAME ": %s: %s\n", name, strerror(errno));
 		return -1;
 	}
 	struct dirent *dent;
@@ -336,16 +339,17 @@ static int ls_readdir(struct file_list *l, char *name) {
 		}
 		if (l->len >= l->cap) {
 			assert(!size_mul_overflow(l->cap, 2, &l->cap));
-			l->data = xrealloc(l->data, l->cap, sizeof(struct file_info));
+			l->data = xreallocr(l->data, l->cap, sizeof(struct file_info));
 		}
-		char *n = strdup(dn);
-		if (ls_stat(fd, n, l->data+l->len) == -1) {
-			free(n);
-			fprintf(stderr, "lsc: cannot access %s/%s: %s\n", name, dn, strerror(errno));
+		(l->data+l->len)->dn = strdup(dn);
+		l->len++;
+	}
+	for (size_t i = 0; i < l->len; i++) {
+		if (ls_stat(fd, (l->data+i)->dn, l->data+i) == -1) {
+			fprintf(stderr, PROGRAM_NAME ": cannot access %s/%s: %s\n", name, (l->data+i)->dn, strerror(errno));
 			err = -1; // Return -1 on errors
 			continue;
 		}
-		l->len++;
 	}
 	if (closedir(dir) == -1) {
 		return -1;

@@ -1,20 +1,21 @@
-#ifndef LSC_UTIL_H
-#define LSC_UTIL_H
+#ifndef UTIL_H
+#define UTIL_H
 
-// Die after printing message for errno
-void die_errno(void);
+#include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdint.h>
 
-// Die after printing message
-void die(const char *s);
+void die(void);
 
-// Die if malloc fails
-void *xmalloc(size_t nmemb, size_t size);
-
-// Die if realloc fails
-void *xrealloc(void *ptr, size_t nmemb, size_t size);
+#ifdef PROGRAM_NAME
+static void die_errno(void) {
+	perror(PROGRAM_NAME);
+	die();
+}
+#endif
 
 #undef assert
-
 #define assert(expr) (likely(expr) ? (void)0 : abort())
 
 #define likely(x) __builtin_expect(!!(x), 1)
@@ -37,4 +38,23 @@ static inline bool size_mul_overflow(size_t a, size_t b, size_t *result) {
 #endif
 }
 
+static inline bool size_add_overflow(size_t a, size_t b, size_t *result) {
+	static_assert(INTPTR_MAX != 0, "stdint not included");
+#if defined(__clang__) || __GNUC__ >= 5
+#if INTPTR_MAX == INT32_MAX
+	return __builtin_uadd_overflow(a, b, result);
+#else
+	return __builtin_uaddl_overflow(a, b, result);
 #endif
+#else
+	*result = a + b;
+	return !(a < SIZE_MAX - b);
+#endif
+}
+
+void *xmalloc(size_t size);
+void *xrealloc(void *p, size_t size);
+void *xmallocr(size_t nmemb, size_t size);
+void *xreallocr(void *p, size_t nmemb, size_t size);
+
+#endif // UTIL_H
