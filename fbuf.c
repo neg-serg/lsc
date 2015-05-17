@@ -15,13 +15,32 @@
 #include "util.h"
 #include "fbuf.h"
 
-void fb_init(fb_t *fb, int fd) {
-	fb->fd = fd;
-	fb->end = fb->start+BUFLEN-1;
-	fb->cursor = fb->start;
+fb fb_empty(void) {
+	fb fb = {0};
+	fb.fd = -1;
+	return fb;
 }
 
-void fb_flush(fb_t *fb) {
+void fb_init(fb *fb, int fd, size_t buflen) {
+	fb->fd = fd;
+	fb->start = xmalloc(buflen);
+	fb->end = fb->start+buflen-1;
+	fb->cursor = fb->start;
+	fb->len = buflen;
+}
+
+void fb_drop(fb *fb) {
+	if (fb->start != NULL) {
+		fb_flush(fb);
+		free(fb->start);
+	}
+	fb->fd = -1;
+	fb->end = NULL;
+	fb->start = NULL;
+	fb->cursor = NULL;
+}
+
+void fb_flush(fb *fb) {
 	ssize_t l = fb->cursor-fb->start;
 	ssize_t c = 0;
 	do {
@@ -32,11 +51,11 @@ void fb_flush(fb_t *fb) {
 	fb->cursor = fb->start;
 }
 
-void fb_puts(fb_t *fb, const char *b) {
+void fb_puts(fb *fb, const char *b) {
 	fb_write(fb, b, strlen(b));
 }
 
-void fb_putc(fb_t *fb, char c) {
+void fb_putc(fb *fb, char c) {
 	if (fb->end - fb->cursor <= 0) {
 		fb_flush(fb);
 	}
@@ -48,7 +67,7 @@ void fb_putc(fb_t *fb, char c) {
 //
 
 // XXX: merge with fmt_u
-void fb_u(fb_t *fb, uint32_t x, int pad, char padc) {
+void fb_u(fb *fb, uint32_t x, int pad, char padc) {
 	char b[32];
 	char *s = b+sizeof(b)-1;
 	for (; x != 0; x/=10) {
@@ -71,7 +90,7 @@ void fb_u(fb_t *fb, uint32_t x, int pad, char padc) {
 #define ZERO_PAD   (1U<<('0'-' '))
 #define LEFT_ADJ   (1U<<('-'-' '))
 
-static void pad(fb_t *f, char c, int w, int l, int fl) {
+static void pad(fb *f, char c, int w, int l, int fl) {
 	char pad[256];
 	if (fl & (LEFT_ADJ | ZERO_PAD) || l >= w) return;
 	l = w - l;
@@ -97,7 +116,7 @@ inline char *fmt_u(uintmax_t x, char *s) {
 typedef char compiler_defines_long_double_incorrectly[9-(int)sizeof(long double)];
 #endif
 
-int fb_fp(fb_t *f, long double y, int w, int p) {
+int fb_fp(fb *f, long double y, int w, int p) {
 	uint32_t big[(LDBL_MANT_DIG+28)/29 + 1	    // mantissa expansion
 		+ (LDBL_MAX_EXP+LDBL_MANT_DIG+28+8)/9]; // exponent expansion
 	uint32_t *a, *d, *r, *z;

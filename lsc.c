@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdnoreturn.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -17,6 +16,8 @@
 #include "xxhash/xxhash.h"
 
 #define PROGRAM_NAME "lsc"
+
+#define BUFLEN 65536
 
 #include "filevercmp.h"
 #include "ht.h"
@@ -106,7 +107,7 @@ static struct opts opts;
 // Sorter
 //
 
-static int sorter(const struct file_info *a, const struct file_info *b) {
+static inline int sorter(const struct file_info *a, const struct file_info *b) {
 	if (opts.group_dir) {
 		bool ad = S_ISDIR(a->linkmode);
 		if (ad != S_ISDIR(b->linkmode)) {
@@ -663,7 +664,7 @@ static uint64_t current_time(void) {
 	return t.tv_sec;
 }
 
-static void reltime(fb_t *out, const uint64_t now, const uint64_t then) {
+static void reltime(fb *out, const uint64_t now, const uint64_t then) {
 	const uint64_t diff = now - then;
 	if (diff <= second) {
 		fb_ws(out, cSecond "  <s" cEnd);
@@ -694,7 +695,7 @@ static void reltime(fb_t *out, const uint64_t now, const uint64_t then) {
 	}
 }
 
-static void reltime_nc(fb_t *out, const uint64_t now, const uint64_t then) {
+static void reltime_nc(fb *out, const uint64_t now, const uint64_t then) {
 	const uint64_t diff = now - then;
 	if (diff <= second) {
 		fb_ws(out, "  <s" cEnd);
@@ -725,7 +726,7 @@ static void reltime_nc(fb_t *out, const uint64_t now, const uint64_t then) {
 
 #define write_tc(out, ts, i) fb_sstr((out), (ts)[(i)])
 
-static void typeletter(fb_t *out, const mode_t mode, struct sstr ts[14]) {
+static void typeletter(fb *out, const mode_t mode, struct sstr ts[14]) {
 	switch (mode&S_IFMT) {
 	case S_IFREG:
 		write_tc(out, ts, i_none);
@@ -755,7 +756,7 @@ static void typeletter(fb_t *out, const mode_t mode, struct sstr ts[14]) {
 }
 
 // create mode strings
-static void strmode(fb_t *out, const mode_t mode, struct sstr ts[14]) {
+static void strmode(fb *out, const mode_t mode, struct sstr ts[14]) {
 	typeletter(out, mode, ts);
 	if (mode&S_IRUSR) {
 		write_tc(out, ts, i_read);
@@ -834,7 +835,7 @@ static void strmode(fb_t *out, const mode_t mode, struct sstr ts[14]) {
 // Size printer
 //
 
-static void write_size(fb_t *out, size_t size, const struct sstr sufs[7]) {
+static void write_size(fb *out, size_t size, const struct sstr sufs[7]) {
 	double s = (double)size;
 	size_t m = 0;
 	while (s >= 1000.0) {
@@ -851,12 +852,12 @@ static void write_size(fb_t *out, size_t size, const struct sstr sufs[7]) {
 	write_tc(out, sufs, m);
 }
 
-static void size_color(fb_t *out, size_t size) {
+static void size_color(fb *out, size_t size) {
 	fb_ws(out, cSize);
 	write_size(out, size, cSizes);
 }
 
-static void size_no_color(fb_t *out, size_t size) {
+static void size_no_color(fb *out, size_t size) {
 	write_size(out, size, nSizes);
 }
 
@@ -864,7 +865,7 @@ static void size_no_color(fb_t *out, size_t size) {
 // Name printer
 //
 
-static void name(fb_t *out, const struct file_info *f) {
+static void name(fb *out, const struct file_info *f) {
 	enum indicator t;
 	if (f->linkname.str != NULL && *f->linkname.str != '\0') {
 		if (!f->linkok) {
@@ -924,7 +925,7 @@ static void name(fb_t *out, const struct file_info *f) {
 	}
 }
 
-static void name_nc(fb_t *out, const struct file_info *f) {
+static void name_nc(fb *out, const struct file_info *f) {
 	enum indicator t;
 	if (f->linkname.str != NULL && *f->linkname.str != '\0') {
 		if (!f->linkok) {
@@ -966,8 +967,8 @@ int main(int argc, char **argv) {
 	bool colorize = (opts.color == COLOR_AUTO && isatty(STDOUT_FILENO)) || opts.color == COLOR_ALWAYS;
 	struct file_list l;
 	file_list_init(&l);
-	fb_t out;
-	fb_init(&out, STDOUT_FILENO);
+	fb out;
+	fb_init(&out, STDOUT_FILENO, BUFLEN);
 	uint64_t now = current_time();
 	int err = EXIT_SUCCESS;
 	if (colorize) {
