@@ -45,13 +45,13 @@ static struct sstr nSizes[7] = {
 };
 
 static struct sstr cSizes[7] = {
-	SSTR(cESC "38;5;7;1m"  "B" cEnd), // Byte
-	SSTR(cESC "38;5;2;1m"  "K" cEnd), // Kibibyte
-	SSTR(cESC "38;5;14;1m" "M" cEnd), // Mebibyte
-	SSTR(cESC "38;5;12;1m" "G" cEnd), // Gibibyte
-	SSTR(cEnd "T"),                   // Tebibyte
-	SSTR(cEnd "P"),                   // Pebibyte
-	SSTR(cEnd "E"),                   // Exbibyte
+	SSTR(cESC "38;5;15m" "B" cEnd), // Byte
+	SSTR(cESC "38;5;10m" "K" cEnd), // Kibibyte
+	SSTR(cESC "38;5;14m" "M" cEnd), // Mebibyte
+	SSTR(cESC "38;5;12m" "G" cEnd), // Gibibyte
+	SSTR(cEnd "T"),                 // Tebibyte
+	SSTR(cEnd "P"),                 // Pebibyte
+	SSTR(cEnd "E"),                 // Exbibyte
 };
 
 static struct sstr nModes[15] = {
@@ -77,25 +77,25 @@ static struct sstr nModes[15] = {
 };
 
 static struct sstr cModes[15] = {
-	SSTR(cESC "38;5;0m"     "—"),      // i_none
+	SSTR(cESC  "38;5;0m"   "—"),        // i_none
 
-	SSTR(cESC "38;5;2m"     "r"),      // i_read
-	SSTR(cESC "38;5;216m"   "w"),      // i_write
-	SSTR(cESC "38;5;131m"   "x"),      // i_exec
+	SSTR(cESC  "38;5;2m"   "r"),        // i_read
+	SSTR(cESC  "38;5;216m" "w"),        // i_write
+	SSTR(cESC  "38;5;131m" "x"),        // i_exec
 
-	SSTR(cESC "38;5;2;1m"   "d" cEnd), // i_dir
-	SSTR(cESC "0m"          "c"),      // i_char
-	SSTR(cESC "0m"          "b"),      // i_block
-	SSTR(cESC "0m"          "p"),      // i_fifo
-	SSTR(cESC "38;5;220;1m" "l" cEnd), // i_link
+	SSTR(cESC  "38;5;10m"  "d"   cEnd), // i_dir
+	SSTR(cESC  "0m"        "c"),        // i_char
+	SSTR(cESC  "0m"        "b"),        // i_block
+	SSTR(cESC  "0m"        "p"),        // i_fifo
+	SSTR(cESC  "38;5;220m" "l"   cEnd), // i_link
 
-	SSTR(cESC "38;5;161m"   "s"),      // i_sock
-	SSTR(cESC "38;5;220m"   "S"),      // i_uid
-	SSTR(cESC "38;5;161m"   "s"),      // i_uid_exec
-	SSTR(cESC "38;5;220m"   "t"),      // i_sticky
-	SSTR(cESC "38;5;220;1m" "T" cEnd), // i_sticky_o
+	SSTR(cESC  "38;5;161m" "s"),        // i_sock
+	SSTR(cESC  "38;5;220m" "S"),        // i_uid
+	SSTR(cESC  "38;5;161m" "s"),        // i_uid_exec
+	SSTR(cESC  "38;5;220m" "t"),        // i_sticky
+	SSTR(cESC  "38;5;220m" "T"   cEnd), // i_sticky_o
 
-	SSTR("?"),                         // i_unknown
+	SSTR("?"),                          // i_unknown
 };
 
 #endif
