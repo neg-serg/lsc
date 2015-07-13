@@ -25,7 +25,6 @@
 #include "fbuf.h"
 #include "config.h"
 
-
 enum type_str_index {
 	i_none,     // Nothing else applies
 
@@ -67,7 +66,7 @@ struct file_info {
 	size_t size;
 	mode_t mode;
 	mode_t linkmode;
-	uint64_t time;
+	time_t time;
 	bool linkok;
 };
 
@@ -656,7 +655,7 @@ static enum indicator color_type(mode_t mode) {
 #define month  (30 * day)
 #define year   (12 * month)
 
-static uint64_t current_time(void) {
+static time_t current_time(void) {
 	struct timespec t;
 	if (clock_gettime(CLOCK_REALTIME, &t) == -1) {
 		die_errno();
@@ -664,10 +663,12 @@ static uint64_t current_time(void) {
 	return t.tv_sec;
 }
 
-static void reltime(fb *out, const uint64_t now, const uint64_t then) {
-	const uint64_t diff = now - then;
-	if (diff <= second) {
-		fb_ws(out, cSecond "  <s" cEnd);
+static void reltime(fb *out, const time_t now, const time_t then) {
+	const time_t diff = now - then;
+	if (diff < 0) {
+		fb_ws(out, cSecond " <0s" cEnd);
+	} else if (diff <= second) {
+		fb_ws(out, cSecond " <1s" cEnd);
 	} else if (diff < minute) {
 		fb_ws(out, cSecond);
 		fb_u(out, diff, 3, ' ');
@@ -695,10 +696,12 @@ static void reltime(fb *out, const uint64_t now, const uint64_t then) {
 	}
 }
 
-static void reltime_nc(fb *out, const uint64_t now, const uint64_t then) {
-	const uint64_t diff = now - then;
-	if (diff <= second) {
-		fb_ws(out, "  <s" cEnd);
+static void reltime_nc(fb *out, const time_t now, const time_t then) {
+	const time_t diff = now - then;
+	if (diff < 0) {
+		fb_ws(out, " <0s");
+	} else if (diff <= second) {
+		fb_ws(out, " <1s" cEnd);
 	} else if (diff < minute) {
 		fb_u(out, diff, 3, ' ');
 		fb_putc(out, 's');
@@ -969,7 +972,7 @@ int main(int argc, char **argv) {
 	file_list_init(&l);
 	fb out;
 	fb_init(&out, STDOUT_FILENO, BUFLEN);
-	uint64_t now = current_time();
+	time_t now = current_time();
 	int err = EXIT_SUCCESS;
 	if (colorize) {
 		for (size_t i = 0; i < opts.restc; i++) {
