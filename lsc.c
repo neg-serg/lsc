@@ -151,7 +151,7 @@ static int parse_arg_colorize(int argc, char **argv, char **s, int i) {
 		use = *s+1;
 		*s += strlen(*s)-1;
 	}
-		
+
 	if (strcmp("never", use) == 0) {
 		opts.color = COLOR_NEVER;
 	} else if (strcmp("always", use) == 0) {
@@ -872,21 +872,34 @@ static void strmode(fb *out, const mode_t mode, struct sstr ts[14])
 // Size printer
 //
 
-static void write_size(fb *out, size_t size, const struct sstr sufs[7])
+#define divide(x, d) (((x)+(((d)-1)/2))/(d))
+
+static void write_size(fb *out, size_t sz, const struct sstr sufs[7])
 {
-	double s = (double)size;
 	size_t m = 0;
-	while (s >= 1000.0) {
+	size_t div = 1;
+	while (divide(sz, div) > 999) {
+		div *= 1024;
 		m++;
-		s /= 1024;
 	}
-	if (s == 0) {
-		fb_ws(out, "  0");
-	} else if (s < 9.95) {
-		fb_fp(out, s, 0, 1);
-	} else {
-		fb_u(out, (uint32_t)(s+0.5), 3, ' ');
+
+	size_t u = divide(sz, div);
+	size_t v = divide(sz*10, div);
+
+	char b[3] = "  0";
+	if (v/10 >= 10 || m == 0) {
+		if (u/100)
+			b[0] = '0' + u/100;
+		if (u/100||u/10%10)
+			b[1] = '0' + u/10%10;
+		b[2] = '0' + u%10;
+	} else if (sz != 0) {
+		b[0] = '0' + v/10;
+		b[1] = '.';
+		b[2] ='0' + v%10;
 	}
+
+	fb_write(out, b, 3);
 	write_tc(out, sufs, m);
 }
 
