@@ -1,12 +1,20 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 
 void die(void);
+
+#define warn(fmt, ...) \
+	(assertx(fprintf(stderr, \
+		"%s: " fmt "\n", \
+		program_invocation_name, \
+		__VA_ARGS__) >= 0))
 
 #ifdef PROGRAM_NAME
 static void die_errno(void) {
@@ -15,8 +23,7 @@ static void die_errno(void) {
 }
 #endif
 
-#undef assert
-#define assert(expr) (likely(expr) ? (void)0 : abort())
+#define assertx(expr) (likely(expr) ? (void)0 : abort())
 
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)

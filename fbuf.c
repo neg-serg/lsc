@@ -15,13 +15,15 @@
 #include "util.h"
 #include "fbuf.h"
 
-fb fb_empty(void) {
+fb fb_empty(void)
+{
 	fb fb = {0};
 	fb.fd = -1;
 	return fb;
 }
 
-void fb_init(fb *fb, int fd, size_t buflen) {
+void fb_init(fb *fb, int fd, size_t buflen)
+{
 	fb->fd = fd;
 	fb->start = xmalloc(buflen);
 	fb->end = fb->start+buflen-1;

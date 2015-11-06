@@ -17,7 +17,8 @@ int verrevcmp(const char *a, size_t alen, const char *b, size_t blen);
 bool c_isdigit(char c) { return (unsigned char)(c - '0') < 10; }
 bool c_isalpha(char c) { return (unsigned char)((c | 32) - 'a') < 26; }
 
-int suffix(const char *s, size_t len) {
+int suffix(const char *s, size_t len)
+{
 	bool read_alphat = false;
 	size_t matched = 0;
 	size_t j = 0;
@@ -37,7 +38,8 @@ int suffix(const char *s, size_t len) {
 	return len - matched;
 }
 
-int order(char c) {
+int order(char c)
+{
 	if (c_isalpha(c)) {
 		return (int)c;
 	} else if (c_isdigit(c)) {
@@ -48,14 +50,15 @@ int order(char c) {
 	return (int)c + 256;
 }
 
-int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
+int verrevcmp(const char *a, size_t alen, const char *b, size_t blen)
+{
 	size_t ai = 0, bi = 0;
 	while (ai < alen || bi < blen) {
-		int first_diff= 0;
+		int first_diff = 0;
 		while ((ai < alen && !c_isdigit(a[ai])) ||
-		       (bi < blen && !c_isdigit(b[bi]))) {
-			int ac = (ai == alen) ? 0 : order (a[ai]);
-			int bc = (bi == blen) ? 0 : order (b[bi]);
+			(bi < blen && !c_isdigit(b[bi]))) {
+			int ac = (ai == alen) ? 0 : order(a[ai]);
+			int bc = (bi == blen) ? 0 : order(b[bi]);
 			if (ac != bc) {
 				return ac - bc;
 			}
@@ -65,7 +68,7 @@ int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
 		while (ai < alen && a[ai] == '0') { ai++; }
 		while (bi < blen && b[bi] == '0') { bi++; }
 		while (ai < alen && c_isdigit(a[ai]) &&
-		       bi < blen && c_isdigit(b[bi])) {
+			bi < blen && c_isdigit(b[bi])) {
 			if (first_diff == 0) {
 				first_diff = (int)a[ai] - (int)b[bi];
 			}
@@ -79,11 +82,13 @@ int verrevcmp(const char *a, size_t alen, const char *b, size_t blen) {
 	return 0;
 }
 
-inline struct suf_indexed new_suf_indexed(const char *s) {
+inline struct suf_indexed new_suf_indexed(const char *s)
+{
 	return new_suf_indexed_len(s, strlen(s));
 }
 
-inline struct suf_indexed new_suf_indexed_len(const char *s, size_t len) {
+inline struct suf_indexed new_suf_indexed_len(const char *s, size_t len)
+{
 	if (len != 0 && s[0] == '.') {
 		return (struct suf_indexed) {
 			.str = s,
@@ -99,7 +104,8 @@ inline struct suf_indexed new_suf_indexed_len(const char *s, size_t len) {
 	}
 }
 
-int filevercmp(struct suf_indexed a, struct suf_indexed b) {
+int filevercmp(struct suf_indexed a, struct suf_indexed b)
+{
 	int scmp = strcmp((char *)a.str, (char *)b.str);
 	if (scmp == 0) { return 0; }
 	if (*a.str == '\0') { return -1; }
@@ -118,8 +124,11 @@ int filevercmp(struct suf_indexed a, struct suf_indexed b) {
 	}
 
 	int result;
-	if ((a.pos == b.pos) && (strncmp((char *)a.str, (char *)b.str, a.pos) == 0)) {
-		result = verrevcmp(a.str+a.pos, a.len-a.pos, b.str+b.pos, b.len-b.pos);
+	if ((a.pos == b.pos) &&
+		(strncmp((char *)a.str, (char *)b.str, a.pos) == 0)) {
+		result = verrevcmp(
+			a.str+a.pos, a.len-a.pos,
+			b.str+b.pos, b.len-b.pos);
 	} else {
 		result = verrevcmp(a.str, a.pos, b.str, b.pos);
 	}

@@ -3,7 +3,7 @@ all: lsc
 files = fbuf.c filevercmp.c ht.c lsc.c util.c xxhash/xxhash.c
 
 -include config.mk
-CFLAGS += $(CPPFLAGS) -std=c11 -D_FILE_OFFSET_BITS=64
+CFLAGS += $(CPPFLAGS) -std=gnu11 -D_FILE_OFFSET_BITS=64
 
 -include Makefile.dep
 

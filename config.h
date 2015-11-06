@@ -55,7 +55,7 @@ static struct sstr cSizes[7] = {
 };
 
 static struct sstr nModes[15] = {
-	SSTR("—"), // i_none
+	SSTR("-"), // i_none
 
 	SSTR("r"), // i_read
 	SSTR("w"), // i_write
@@ -77,7 +77,7 @@ static struct sstr nModes[15] = {
 };
 
 static struct sstr cModes[15] = {
-	SSTR(cESC  "38;5;0m"   "—"),        // i_none
+	SSTR(cESC  "38;5;0m"   "-"),        // i_none
 
 	SSTR(cESC  "38;5;2m"   "r"),        // i_read
 	SSTR(cESC  "38;5;216m" "w"),        // i_write
