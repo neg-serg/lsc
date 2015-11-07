@@ -772,114 +772,39 @@ static void reltime_no_color(fb *out, const time_t now, const time_t then)
 // Mode printer
 //
 
-#define write_tc(out, ts, i) fb_sstr((out), (ts)[(i)])
-
-static void typeletter(fb *out, const mode_t mode, struct sstr ts[14])
-{
-	switch (mode&S_IFMT) {
-	case S_IFREG:
-		write_tc(out, ts, i_none);
-		break;
-	case S_IFDIR:
-		write_tc(out, ts, i_dir);
-		break;
-	case S_IFCHR:
-		write_tc(out, ts, i_char);
-		break;
-	case S_IFBLK:
-		write_tc(out, ts, i_block);
-		break;
-	case S_IFIFO:
-		write_tc(out, ts, i_fifo);
-		break;
-	case S_IFLNK:
-		write_tc(out, ts, i_link);
-		break;
-	case S_IFSOCK:
-		write_tc(out, ts, i_sock);
-		break;
-	default:
-		write_tc(out, ts, i_unknown);
-		break;
-	}
-}
+#define tc fb_sstr
 
 // create mode strings
-static void strmode(fb *out, const mode_t mode, struct sstr ts[14])
+static void strmode(fb *out, const mode_t mode, const struct sstr ts[14])
 {
-	typeletter(out, mode, ts);
-	if (mode&S_IRUSR) {
-		write_tc(out, ts, i_read);
-	} else {
-		write_tc(out, ts, i_none);
+	switch (mode&S_IFMT) {
+	case S_IFREG: tc(out, ts[i_none]); break;
+	case S_IFDIR: tc(out, ts[i_dir]); break;
+	case S_IFCHR: tc(out, ts[i_char]); break;
+	case S_IFBLK: tc(out, ts[i_block]); break;
+	case S_IFIFO: tc(out, ts[i_fifo]); break;
+	case S_IFLNK: tc(out, ts[i_link]); break;
+	case S_IFSOCK: tc(out, ts[i_sock]); break;
+	default: tc(out, ts[i_unknown]); break;
 	}
-
-	if (mode&S_IWUSR) {
-		write_tc(out, ts, i_write);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_ISUID) {
-		if (mode&S_IXUSR) {
-			write_tc(out, ts, i_uid_exec);
-		} else {
-			write_tc(out, ts, i_uid);
-		}
-	} else if (mode&S_IXUSR) {
-		write_tc(out, ts, i_exec);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_IRGRP) {
-		write_tc(out, ts, i_read);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_IWGRP) {
-		write_tc(out, ts, i_write);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_ISGID) {
-		if (mode&S_IXGRP) {
-			write_tc(out, ts, i_uid_exec);
-		} else {
-			write_tc(out, ts, i_uid);
-		}
-	} else if (mode&S_IXGRP) {
-		write_tc(out, ts, i_exec);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_IROTH) {
-		write_tc(out, ts, i_read);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_IWOTH) {
-		write_tc(out, ts, i_write);
-	} else {
-		write_tc(out, ts, i_none);
-	}
-
-	if (mode&S_ISVTX) {
-		if (mode&S_IXOTH) {
-			write_tc(out, ts, i_sticky);
-		} else {
-			write_tc(out, ts, i_sticky_o);
-		}
-	} else if (mode&S_IXOTH) {
-		write_tc(out, ts, i_exec);
-	} else {
-		write_tc(out, ts, i_none);
-	}
+	tc(out, ts[mode&S_IRUSR ? i_read : i_none]);
+	tc(out, ts[mode&S_IWUSR ? i_write : i_none]);
+	tc(out, ts[mode&S_ISUID
+		? mode&S_IXUSR ? i_uid_exec : i_uid
+		: mode&S_IXUSR ? i_exec : i_none]);
+	tc(out, ts[mode&S_IRGRP ? i_read : i_none]);
+	tc(out, ts[mode&S_IWGRP ? i_write : i_none]);
+	tc(out, ts[mode&S_ISGID
+		? mode&S_IXGRP ? i_uid_exec : i_uid
+		: mode&S_IXGRP ? i_exec : i_none]);
+	tc(out, ts[mode&S_IROTH ? i_read : i_none]);
+	tc(out, ts[mode&S_IWOTH ? i_write : i_none]);
+	tc(out, ts[mode&S_ISVTX
+		? mode&S_IXOTH ? i_sticky : i_sticky_o
+		: mode&S_IXOTH ? i_exec : i_none]);
 }
+
+#undef tc
 
 //
 // Size printer
