@@ -65,7 +65,7 @@ struct file_info {
 	mode_t mode;
 	mode_t linkmode;
 	time_t time;
-	size_t size;
+	off_t size;
 	bool linkok;
 };
 
@@ -303,13 +303,13 @@ static inline int ls_stat(int dirfd, char *name, struct file_info *out)
 		.mode = st.st_mode,
 		.linkmode = 0,
 		.time = opts.ctime ? st.st_ctim.tv_sec : st.st_mtim.tv_sec,
-		.size = (size_t)st.st_size,
+		.size = st.st_size,
 		.linkok = true,
 	};
 
 	if (S_ISLNK(out->mode)) {
 		int ln = ls_readlink(dirfd, name,
-			(size_t)st.st_size,
+			st.st_size,
 			&(out->linkname));
 		if (ln == -1) {
 			out->linkok = false;
@@ -693,6 +693,12 @@ static time_t current_time(void)
 	return t.tv_sec;
 }
 
+void fmt3(char b[3], uint16_t x) {
+	if (x/100) b[0] = '0' + x/100;
+	if (x/100||x/10%10) b[1] = '0' + x/10%10;
+	b[2] = '0' + x%10;
+}
+
 static void reltime(fb *out, const time_t now, const time_t then)
 {
 	const time_t diff = now - then;
@@ -874,42 +880,36 @@ static void strmode(fb *out, const mode_t mode, struct sstr ts[14])
 
 #define divide(x, d) (((x)+(((d)-1)/2))/(d))
 
-static void write_size(fb *out, size_t sz, const struct sstr sufs[7])
+static void write_size(fb *out, off_t sz, const struct sstr sufs[7])
 {
-	size_t m = 0;
-	size_t div = 1;
-	while (divide(sz, div) > 999) {
+	unsigned m = 0;
+	off_t div = 1;
+	off_t u = sz;
+	while (u > 999) {
 		div *= 1024;
+		u = divide(u, 1024);
 		m++;
 	}
-
-	size_t u = divide(sz, div);
-	size_t v = divide(sz*10, div);
-
+	off_t v = divide(sz*10, div);
 	char b[3] = "  0";
 	if (v/10 >= 10 || m == 0) {
-		if (u/100)
-			b[0] = '0' + u/100;
-		if (u/100||u/10%10)
-			b[1] = '0' + u/10%10;
-		b[2] = '0' + u%10;
+		fmt3(b, u);
 	} else if (sz != 0) {
 		b[0] = '0' + v/10;
 		b[1] = '.';
 		b[2] ='0' + v%10;
 	}
-
 	fb_write(out, b, 3);
 	write_tc(out, sufs, m);
 }
 
-static void size_color(fb *out, size_t size)
+static void size_color(fb *out, off_t size)
 {
 	fb_ws(out, cSize);
 	write_size(out, size, cSizes);
 }
 
-static void size_no_color(fb *out, size_t size)
+static void size_no_color(fb *out, off_t size)
 {
 	write_size(out, size, nSizes);
 }
