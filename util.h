@@ -1,8 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define _GNU_SOURCE
-
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -10,18 +8,12 @@
 
 void die(void);
 
-#define warn(fmt, ...) \
-	(assertx(fprintf(stderr, \
-		"%s: " fmt "\n", \
-		program_invocation_name, \
-		__VA_ARGS__) >= 0))
+void die_errno(void);
 
-#ifdef PROGRAM_NAME
-static void die_errno(void) {
-	perror(PROGRAM_NAME);
-	die();
-}
-#endif
+#define logf(fmt, ...) (assertx(fprintf(stderr, fmt "\n", __VA_ARGS__) >= 0))
+#define log(s) (logf("%s", s))
+#define warnf(fmt, ...) (logf("%s: " fmt, program_invocation_name, __VA_ARGS__))
+#define warn(s) (warnf("%s", s))
 
 #define assertx(expr) (likely(expr) ? (void)0 : abort())
 

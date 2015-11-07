@@ -15,8 +15,6 @@
 
 #include "xxhash/xxhash.h"
 
-#define PROGRAM_NAME "lsc"
-
 #define BUFLEN 65536
 
 #include "filevercmp.h"
@@ -47,17 +45,19 @@ enum type_str_index {
 	i_unknown,  // Anything else
 };
 
-#define usage \
-"Usage: " PROGRAM_NAME " [option ...] [file ...]\n" \
-"  -C when  use colours (never, always or auto)\n" \
-"  -F       append file type indicator\n" \
-"  -a       show all files\n" \
-"  -c       use ctime\n" \
-"  -r       reverse sort\n" \
-"  -g       group directories first\n" \
-"  -S       sort by size\n" \
-"  -t       sort by time\n" \
-"  -h       show this help"
+void usage(void) {
+	logf("Usage: %s [option ...] [file ...]\n"
+		"  -C when  use colours (never, always or auto)\n"
+		"  -F       append file type indicator\n"
+		"  -a       show all files\n"
+		"  -c       use ctime\n"
+		"  -r       reverse sort\n"
+		"  -g       group directories first\n"
+		"  -S       sort by size\n"
+		"  -t       sort by time\n"
+		"  -h       show this help",
+		program_invocation_name);
+}
 
 struct file_info {
 	struct suf_indexed name;
@@ -139,8 +139,8 @@ static int parse_arg_colorize(int argc, char **argv, char **s, int i) {
 	if ((*s)[1] == '\0') {
 		if (i+1 < argc) {
 			// No argument
-			fputs("option '-C' needs an argument\n" usage,
-				stderr);
+			warn("option '-C' needs an argument\n");
+			usage();
 			die();
 		}
 		// Argument is next one
@@ -159,8 +159,8 @@ static int parse_arg_colorize(int argc, char **argv, char **s, int i) {
 	} else if (strcmp("auto", use) == 0) {
 		opts.color = COLOR_AUTO;
 	} else {
-		warn("invalid argument to option '-C': \"%s\"", use);
-		fputs(usage, stderr);
+		warnf("invalid argument to option '-C': \"%s\"", use);
+		usage();
 		die();
 	}
 	return i;
@@ -219,11 +219,11 @@ static void parse_args(int argc, char **argv)
 				i = parse_arg_colorize(argc, argv, &s, i);
 				break;
 			case 'h':
-				fputs(usage, stderr);
+				usage();
 				exit(EXIT_SUCCESS);
 			default:
-				warn("unsupported option '%c'", f);
-				fputs(usage, stderr);
+				warnf("unsupported option '%c'", f);
+				usage();
 				die();
 			}
 		}
@@ -333,12 +333,12 @@ static int ls_readdir(struct file_list *l, char *name)
 	int err = 0;
 	DIR *dir = opendir(name);
 	if (dir == NULL) {
-		warn("cannot open directory %s: %s", name, strerror(errno));
+		warnf("cannot open directory %s: %s", name, strerror(errno));
 		return -1;
 	}
 	int fd = dirfd(dir);
 	if (fd == -1) {
-		warn("%s: %s", name, strerror(errno));
+		warnf("%s: %s", name, strerror(errno));
 		return -1;
 	}
 	struct dirent *dent;
@@ -358,7 +358,7 @@ static int ls_readdir(struct file_list *l, char *name)
 		}
 		dn = strdup(dn);
 		if (ls_stat(fd, dn, l->data+l->len) == -1) {
-			warn("cannot access %s/%s: %s", name, dn, strerror(errno));
+			warnf("cannot access %s/%s: %s", name, dn, strerror(errno));
 			err = -1; // Return -1 on errors
 			free(dn);
 			continue;
@@ -377,7 +377,7 @@ int ls(struct file_list *l, char *name)
 {
 	char *s = strdup(name); // make freeing simpler
 	if (ls_stat(AT_FDCWD, s, l->data) == -1) {
-		warn("cannot access %s: %s", s, strerror(errno));
+		warnf("cannot access %s: %s", s, strerror(errno));
 		free(s);
 		_exit(EXIT_FAILURE);
 	}
