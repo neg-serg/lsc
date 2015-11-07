@@ -18,7 +18,7 @@ int fb_printf_hack(fb *fb, size_t maxlen, const char *fmt, ...);
 void fb_u(fb *fb, uint32_t x, int pad, char padc);
 int fb_fp(fb *f, long double y, int w, int p);
 
-static inline void fb_write(fb *fb, const char *b, size_t len) {
+static void fb_write(fb *fb, const char *b, size_t len) {
 	assert(len < fb->len);
 	if (unlikely(len > (size_t)(fb->end-fb->cursor))) {
 		fb_flush(fb);
@@ -26,16 +26,17 @@ static inline void fb_write(fb *fb, const char *b, size_t len) {
 	fb->cursor = mempcpy(fb->cursor, b, len);
 }
 
-static inline void fb_putc(fb *fb, char c) {
+static void fb_putc(fb *fb, char c) {
 	if (fb->cursor == fb->end) { fb_flush(fb); }
 	*fb->cursor++ = c;
 }
 
-static inline void fb_puts(fb *fb, const char *b) {
+static void fb_puts(fb *fb, const char *b) {
 	fb_write(fb, b, strlen(b));
 }
 
 // write constant string
+
 #define fb_ws(fb, s) fb_write((fb), (s), sizeof(s)-1)
 
 // sized string
@@ -47,6 +48,8 @@ struct sstr {
 // sized string from literal
 #define SSTR(s) {(s), sizeof(s)-1}
 
-#define fb_sstr(out, ts) fb_write((out), (ts).s, (ts).len)
+static void fb_sstr(fb *b, struct sstr ts) {
+	fb_write(b, ts.s, ts.len);
+}
 
 #endif

@@ -23,7 +23,7 @@ void die_errno(void);
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 #define MIN(a,b) ((a)<(b) ? (a) : (b))
 
-static inline bool size_mul_overflow(size_t a, size_t b, size_t *result) {
+static bool size_mul_overflow(size_t a, size_t b, size_t *result) {
 	static_assert(INTPTR_MAX != 0, "stdint not included");
 #if defined(__clang__) || __GNUC__ >= 5
 #if INTPTR_MAX == INT32_MAX
@@ -37,7 +37,7 @@ static inline bool size_mul_overflow(size_t a, size_t b, size_t *result) {
 #endif
 }
 
-static inline bool size_add_overflow(size_t a, size_t b, size_t *result) {
+static bool size_add_overflow(size_t a, size_t b, size_t *result) {
 	static_assert(INTPTR_MAX != 0, "stdint not included");
 #if defined(__clang__) || __GNUC__ >= 5
 #if INTPTR_MAX == INT32_MAX

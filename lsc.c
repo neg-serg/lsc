@@ -105,7 +105,7 @@ static struct opts opts;
 // Sorter
 //
 
-extern inline int sorter(const struct file_info *a, const struct file_info *b)
+static int sorter(const struct file_info *a, const struct file_info *b)
 {
 	if (opts.group_dir) {
 		if (S_ISDIR(a->linkmode) != S_ISDIR(b->linkmode)) {
@@ -290,7 +290,7 @@ static int ls_readlink(int dirfd, char *name, size_t size,
 }
 
 // stat writes a file_info describing the named file
-static inline int ls_stat(int dirfd, char *name, struct file_info *out)
+static int ls_stat(int dirfd, char *name, struct file_info *out)
 {
 	struct stat st;
 	if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) == -1) {
@@ -885,7 +885,9 @@ static void strmode(fb *out, const mode_t mode, struct sstr ts[14])
 // Size printer
 //
 
-#define divide(x, d) (((x)+(((d)-1)/2))/(d))
+static off_t divide(off_t x, off_t d) {
+	return (x+((d-1)/2))/d;
+}
 
 static void write_size(fb *out, off_t sz, const struct sstr sufs[7])
 {
@@ -907,7 +909,7 @@ static void write_size(fb *out, off_t sz, const struct sstr sufs[7])
 		b[2] ='0' + v%10;
 	}
 	fb_write(out, b, 3);
-	write_tc(out, sufs, m);
+	fb_sstr(out, sufs[m]);
 }
 
 static void size_color(fb *out, off_t size)
