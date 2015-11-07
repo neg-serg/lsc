@@ -89,19 +89,14 @@ inline struct suf_indexed new_suf_indexed(const char *s)
 
 inline struct suf_indexed new_suf_indexed_len(const char *s, size_t len)
 {
-	if (len != 0 && s[0] == '.') {
-		return (struct suf_indexed) {
-			.str = s,
-			.pos = suffix(s+1, len-1),
-			.len = len,
-		};
-	} else {
-		return (struct suf_indexed) {
-			.str = s,
-			.pos = suffix(s, len),
-			.len = len,
-		};
-	}
+	struct suf_indexed si;
+	si.str = s;
+	si.len = len;
+	if (len != 0 && s[0] == '.')
+		si.pos = suffix(s+1, len-1);
+	else
+		si.pos = suffix(s, len);
+	return si;
 }
 
 int filevercmp(struct suf_indexed a, struct suf_indexed b)
