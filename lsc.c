@@ -89,7 +89,7 @@ enum sort_type {
 
 struct opts {
 	char **rest;
-	size_t  restc;
+	size_t restc;
 	enum sort_type sort;
 	enum use_color color;
 	int reverse;
@@ -328,7 +328,7 @@ static inline int ls_stat(int dirfd, char *name, struct file_info *out)
 static int ls_readdir(struct file_list *l, char *name)
 {
 	for (size_t l = strlen(name)-1; name[l] == '/' && l>1; l--) {
-		name[l]='\0';
+		name[l] = '\0';
 	}
 	int err = 0;
 	DIR *dir = opendir(name);
@@ -446,7 +446,7 @@ static const struct ind_name *ind_name_lookup(const char *str,
 		54, 54, 54, 54, 54, 54, 54, 54, 54, 54,
 		54, 54, 54, 54, 54, 54, 54, 54, 23, 30,
 		10, 10, 13, 54, 11, 28,  3, 54, 18, 15,
-		6,  5,  0, 54, 20,  0, 15,  1,  8, 54,
+		6,  5,  0,  54, 20,  0, 15, 1,  8,  54,
 		10, 28, 54, 54, 54, 54, 54, 54, 54, 54,
 		54, 54, 54, 54, 54, 54, 54, 54, 54, 54,
 		54, 54, 54, 54, 54, 54, 54, 54, 54, 54,
