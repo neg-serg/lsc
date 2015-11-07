@@ -699,7 +699,7 @@ void fmt3(char b[3], uint16_t x) {
 	b[2] = '0' + x%10;
 }
 
-static void reltime(fb *out, const time_t now, const time_t then)
+static void reltime_color(fb *out, const time_t now, const time_t then)
 {
 	char b[3] = "   ";
 	const time_t diff = now - then;
@@ -740,7 +740,7 @@ static void reltime(fb *out, const time_t now, const time_t then)
 	}
 }
 
-static void reltime_nc(fb *out, const time_t now, const time_t then)
+static void reltime_no_color(fb *out, const time_t now, const time_t then)
 {
 	const time_t diff = now - then;
 	if (diff < 0) {
@@ -925,7 +925,7 @@ static void size_no_color(fb *out, off_t size)
 // Name printer
 //
 
-static void name(fb *out, const struct file_info *f)
+static void name_color(fb *out, const struct file_info *f)
 {
 	enum indicator t;
 	if (f->linkname.str != NULL && *f->linkname.str != '\0') {
@@ -987,7 +987,7 @@ static void name(fb *out, const struct file_info *f)
 	}
 }
 
-static void name_nc(fb *out, const struct file_info *f)
+static void name_no_color(fb *out, const struct file_info *f)
 {
 	enum indicator t;
 	if (f->linkname.str != NULL && *f->linkname.str != '\0') {
@@ -1037,39 +1037,39 @@ int main(int argc, char **argv)
 	fb_init(&out, STDOUT_FILENO, BUFLEN);
 	time_t now = current_time();
 	int err = EXIT_SUCCESS;
+
+	struct sstr *modes;
+	void (*reltime)(fb *, const time_t, const time_t);
+	void (*size)(fb *, off_t);
+	void (*name)(fb *, const struct file_info *);
+
 	if (colorize) {
-		for (size_t i = 0; i < opts.restc; i++) {
-			if (ls(&l, opts.rest[i]) == -1)
-				err = EXIT_FAILURE;
-			fi_tim_sort(l.data, l.len);
-			for (size_t j = 0; j < l.len; j++) {
-				strmode(&out, l.data[j].mode, cModes);
-				reltime(&out, now, l.data[j].time);
-				fb_ws(&out, cCol);
-				size_color(&out, l.data[j].size);
-				fb_ws(&out, cCol);
-				name(&out, &l.data[j]);
-				fb_putc(&out, '\n');
-			}
-			file_list_clear(&l);
-		};
+		modes = cModes;
+		reltime = reltime_color;
+		size = size_color;
+		name = name_color;
 	} else {
-		for (size_t i = 0; i < opts.restc; i++) {
-			if (ls(&l, opts.rest[i]) == -1)
-				err = EXIT_FAILURE;
-			fi_tim_sort(l.data, l.len);
-			for (size_t j = 0; j < l.len; j++) {
-				strmode(&out, l.data[j].mode, nModes);
-				reltime_nc(&out, now, l.data[j].time);
-				fb_ws(&out, nCol);
-				size_no_color(&out, l.data[j].size);
-				fb_ws(&out, nCol);
-				name_nc(&out, &l.data[j]);
-				fb_putc(&out, '\n');
-			}
-			file_list_clear(&l);
-		}
+		modes = nModes;
+		reltime = reltime_no_color;
+		size = size_no_color;
+		name = name_no_color;
 	}
+
+	for (size_t i = 0; i < opts.restc; i++) {
+		if (ls(&l, opts.rest[i]) == -1)
+			err = EXIT_FAILURE;
+		fi_tim_sort(l.data, l.len);
+		for (size_t j = 0; j < l.len; j++) {
+			strmode(&out, l.data[j].mode, modes);
+			reltime(&out, now, l.data[j].time);
+			fb_putc(&out, ' ');
+			size(&out, l.data[j].size);
+			fb_putc(&out, ' ');
+			name(&out, &l.data[j]);
+			fb_putc(&out, '\n');
+		}
+		file_list_clear(&l);
+	};
 	fb_flush(&out);
 	file_list_free(&l);
 	//fb_free(&out);
