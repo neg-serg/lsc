@@ -1,8 +1,8 @@
 #ifndef LSC_CONF_H
 #define LSC_CONF_H
 
-// Column delimiters
-#define nCol      " "
+// Column delimiter
+#define col      " "
 
 // Symlink -> symlink target
 #define nSymDelim " → "
@@ -12,9 +12,6 @@
 
 #define cESC      "\033["   // Start escape sequence
 #define cEnd      cESC "0m" // End escape sequence
-
-// Column delimiters
-#define cCol      " "
 
 // Symlink -> symlink target
 #define cSymDelim " " cESC "38;5;8m" "→" cEnd " "
