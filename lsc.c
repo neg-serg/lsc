@@ -701,6 +701,7 @@ void fmt3(char b[3], uint16_t x) {
 
 static void reltime(fb *out, const time_t now, const time_t then)
 {
+	char b[3] = "   ";
 	const time_t diff = now - then;
 	if (diff < 0) {
 		fb_ws(out, cSecond " <0s" cEnd);
@@ -708,27 +709,33 @@ static void reltime(fb *out, const time_t now, const time_t then)
 		fb_ws(out, cSecond " <1s" cEnd);
 	} else if (diff < minute) {
 		fb_ws(out, cSecond);
-		fb_u(out, diff, 3, ' ');
+		fmt3(b, diff);
+		fb_write(out, b, 3);
 		fb_ws(out, "s" cEnd);
 	} else if (diff < hour) {
 		fb_ws(out, cMinute);
-		fb_u(out, diff/minute, 3, ' ');
+		fmt3(b, diff/minute);
+		fb_write(out, b, 3);
 		fb_ws(out, "m" cEnd);
 	} else if (diff < hour*36) {
 		fb_ws(out, cHour);
-		fb_u(out, diff/hour, 3, ' ');
+		fmt3(b, diff/hour);
+		fb_write(out, b, 3);
 		fb_ws(out, "h" cEnd);
 	} else if (diff < month) {
 		fb_ws(out, cDay);
-		fb_u(out, diff/day, 3, ' ');
+		fmt3(b, diff/day);
+		fb_write(out, b, 3);
 		fb_ws(out, "d" cEnd);
 	} else if (diff < year) {
 		fb_ws(out, cWeek);
-		fb_u(out, diff/week, 3, ' ');
+		fmt3(b, diff/week);
+		fb_write(out, b, 3);
 		fb_ws(out, "w" cEnd);
 	} else {
 		fb_ws(out, cYear);
-		fb_u(out, diff/year, 3, ' ');
+		fmt3(b, diff/year);
+		fb_write(out, b, 3);
 		fb_ws(out, "y" cEnd);
 	}
 }
