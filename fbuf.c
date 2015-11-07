@@ -53,17 +53,6 @@ void fb_flush(fb *fb) {
 	fb->cursor = fb->start;
 }
 
-void fb_puts(fb *fb, const char *b) {
-	fb_write(fb, b, strlen(b));
-}
-
-void fb_putc(fb *fb, char c) {
-	if (fb->end - fb->cursor <= 0) {
-		fb_flush(fb);
-	}
-	*fb->cursor++ = c;
-}
-
 //
 // Number formatting
 //

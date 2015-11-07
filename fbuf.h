@@ -14,8 +14,6 @@ typedef struct fb {
 void fb_init(fb *fb, int fd, size_t buflen);
 void fb_drop(fb *fb);
 void fb_flush(fb *fb);
-void fb_puts(fb *fb, const char *s);
-void fb_putc(fb *fb, char c);
 int fb_printf_hack(fb *fb, size_t maxlen, const char *fmt, ...);
 void fb_u(fb *fb, uint32_t x, int pad, char padc);
 int fb_fp(fb *f, long double y, int w, int p);
@@ -26,6 +24,15 @@ static inline void fb_write(fb *fb, const char *b, size_t len) {
 		fb_flush(fb);
 	}
 	fb->cursor = mempcpy(fb->cursor, b, len);
+}
+
+static inline void fb_putc(fb *fb, char c) {
+	if (fb->cursor == fb->end) { fb_flush(fb); }
+	*fb->cursor++ = c;
+}
+
+static inline void fb_puts(fb *fb, const char *b) {
+	fb_write(fb, b, strlen(b));
 }
 
 // write constant string
