@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
@@ -9,12 +7,6 @@
 #include "util.h"
 
 void die(void) { exit(EXIT_FAILURE); }
-
-void die_errno(void) {
-	perror(program_invocation_name);
-	exit(EXIT_FAILURE);
-}
-
 
 void *xmalloc(size_t size) {
 	void *p = malloc(size);
