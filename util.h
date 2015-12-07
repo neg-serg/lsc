@@ -1,26 +1,18 @@
-#ifndef UTIL_H
-#define UTIL_H
-
-#include <assert.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdint.h>
-
-void die(void);
+#define log(fmt, ...) (assertx(fprintf(stderr, fmt "\n", __VA_ARGS__) >= 0))
 
 #ifdef program_name
-static void die_errno(void) {
-	perror(program_name);
-	exit(EXIT_FAILURE);
-}
-#endif
 
-#define logf(fmt, ...) (assertx(fprintf(stderr, fmt "\n", __VA_ARGS__) >= 0))
-#define log(s) (logf("%s", s))
-#ifdef program_name
-#define warnf(fmt, ...) (logf("%s: " fmt, program_name, __VA_ARGS__))
-#define warn(s) (warnf("%s", s))
-#endif
+#define warn(fmt, ...) (log("%s: " fmt, program_name, __VA_ARGS__))
+
+#define die(fmt, ...) do { \
+	warn(fmt, __VA_ARGS__); \
+	exit(1); \
+} while (0)
+
+#define warn_errno(fmt, ...) warn(fmt ": %s", __VA_ARGS__, strerror(errno))
+#define die_errno(fmt, ...) die(fmt ": %s", __VA_ARGS__, strerror(errno))
+
+#endif // program_name
 
 #define assertx(expr) (likely(expr) ? (void)0 : abort())
 
@@ -40,5 +32,3 @@ void *xmalloc(size_t size);
 void *xrealloc(void *p, size_t size);
 void *xmallocr(size_t nmemb, size_t size);
 void *xreallocr(void *p, size_t nmemb, size_t size);
-
-#endif // UTIL_H

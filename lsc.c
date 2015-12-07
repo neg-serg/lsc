@@ -65,7 +65,7 @@ enum file_kind {
 };
 
 void usage(void) {
-	logf("usage: %s [option ...] [file ...]"
+	log("usage: %s [option ...] [file ...]"
 		"\n  -C when  use colours (never, always or auto)"
 		"\n  -F       append file type indicator"
 		"\n  -a       show all files"
@@ -227,12 +227,12 @@ static int ls_readdir(struct file_list *l, char *name)
 	int err = 0;
 	DIR *dir = opendir(name);
 	if (dir == NULL) {
-		warnf("cannot open directory %s: %s", name, strerror(errno));
+		warn_errno("cannot open directory %s", name);
 		return -1;
 	}
 	int fd = dirfd(dir);
 	if (fd == -1) {
-		warnf("%s: %s", name, strerror(errno));
+		warn_errno("%s", name);
 		return -1;
 	}
 	struct dirent *dent;
@@ -252,8 +252,7 @@ static int ls_readdir(struct file_list *l, char *name)
 		}
 		dn = strdup(dn);
 		if (ls_stat(fd, dn, l->data+l->len) == -1) {
-			warnf("cannot access %s/%s: %s",
-			    name, dn, strerror(errno));
+			warn_errno("cannot access %s/%s", name, dn);
 			err = -1; // Return -1 on errors
 			free(dn);
 			continue;
@@ -272,9 +271,9 @@ int ls(struct file_list *l, char *name)
 {
 	char *s = strdup(name); // make freeing simpler
 	if (ls_stat(AT_FDCWD, s, l->data) == -1) {
-		warnf("cannot access %s: %s", s, strerror(errno));
+		warn_errno("cannot access %s", s);
 		free(s);
-		_exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	if (S_ISDIR(l->data->mode)) {
 		free(s);
@@ -393,7 +392,7 @@ static time_t current_time(void)
 {
 	struct timespec t;
 	if (clock_gettime(CLOCK_REALTIME, &t) == -1) {
-		die_errno();
+		die_errno("%s", "current_time");
 	}
 	return t.tv_sec;
 }
@@ -687,9 +686,9 @@ void parse_arg_colorize(char *s) {
 	} else if (strcmp("auto", s) == 0) {
 		opts.color = COLOR_AUTO;
 	} else {
-		warnf("invalid argument to option -C: %s", s);
+		warn("invalid argument to option -C: %s", s);
 		usage();
-		die();
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -782,5 +781,5 @@ int main(int argc, char **argv)
 	fb_drop(&out);
 	free(ll);
 	drop_ls_color();
-	return err;
+	exit(err);
 }
