@@ -1,7 +1,0 @@
-lsc: fbuf.c util.h fbuf.h
-lsc: filevercmp.c filevercmp.h util.h
-lsc: ht.c ht.h genht/ht.h genht/ht_inlines.h genht/ht.c
-lsc: lsc.c xxhash/xxhash.h filevercmp.h ht.h genht/ht.h \
- genht/ht_inlines.h util.h fbuf.h config.h sort/sort.h sort/sort_common.h
-lsc: util.c util.h
-lsc: xxhash/xxhash.c xxhash/xxhash.h

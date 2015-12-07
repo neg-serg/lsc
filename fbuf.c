@@ -1,71 +1,89 @@
-#define _GNU_SOURCE
-
-#include <assert.h>
-#include <float.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdnoreturn.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "util.h"
+#include "slice.h"
 #include "fbuf.h"
+#include "util.h"
 
-fb fb_empty(void)
+void fb_init(fb *f, int fd, size_t buflen)
 {
-	fb fb = {0};
-	fb.fd = -1;
-	return fb;
+	f->fd = fd;
+	f->start = xmalloc(buflen);
+	f->end = f->start+buflen-1;
+	f->cursor = f->start;
+	f->len = buflen;
 }
 
-void fb_init(fb *fb, int fd, size_t buflen)
+void fb_drop(fb *f)
 {
-	fb->fd = fd;
-	fb->start = xmalloc(buflen);
-	fb->end = fb->start+buflen-1;
-	fb->cursor = fb->start;
-	fb->len = buflen;
+	free(f->start);
 }
 
-void fb_drop(fb *fb) {
-	if (fb->start != NULL) {
-		fb_flush(fb);
-		free(fb->start);
+void fb_write(fb *f, const char *b, size_t len)
+{
+	if (unlikely(len > (size_t)(f->end-f->cursor))) {
+		fb_flush(f);
+		do {
+			ssize_t w = write(f->fd, b, len);
+			assertx(w != -1); // todo: handle properly
+			len -= w;
+			b += w;
+		} while (len > (size_t)(f->end-f->cursor));
 	}
-	fb->fd = -1;
-	fb->end = NULL;
-	fb->start = NULL;
-	fb->cursor = NULL;
+	f->cursor = mempcpy(f->cursor, b, len);
 }
 
-void fb_flush(fb *fb) {
-	ssize_t l = fb->cursor-fb->start;
+void fb_write_buf(fb *f, buf b)
+{
+	fb_write(f, b.buf, b.len);
+}
+
+void fb_puts(fb *f, const char *b)
+{
+	fb_write(f, b, strlen(b));
+}
+
+void fb_putc(fb *fb, char c) {
+	if (fb->cursor == fb->end) { fb_flush(fb); }
+	*fb->cursor++ = c;
+}
+
+void fb_flush(fb *f)
+{
+	ssize_t l = f->cursor-f->start;
 	ssize_t c = 0;
 	do {
-		ssize_t w = write(fb->fd, fb->start+c, l-c);
-		assert(w != -1);
+		ssize_t w = write(f->fd, f->start+c, l-c);
+		assertx(w != -1);
 		c += w;
 	} while (l-c > 0);
-	fb->cursor = fb->start;
+	f->cursor = f->start;
 }
 
-//
-// Number formatting
-//
+static size_t fb_space(fb *f)
+{
+	return (size_t)(f->end-f->cursor);
+}
 
-void fb_u(fb *fb, uint32_t x, int pad, char padc) {
-	char b[32];
-	char *s = b+sizeof(b)-1;
+void fb_u(fb *f, uint32_t x, int pad, char c)
+{
+	size_t len = 32;
+	if (fb_space(f) < len) {
+		fb_flush(f);
+		assertx(fb_space(f) < len);
+	}
+
+	char *b = f->cursor;
+	char *s = b+len-1;
 	for (; x != 0; x/=10) {
 		*--s = '0' + x%10;
 	}
-	pad = pad-((ssize_t)sizeof(b)-(s-b));
+	pad = pad-((ssize_t)len-(s-b));
 	for (; pad>=0; pad--) {
-		*--s = padc;
+		*--s = c;
 	}
-	fb_write(fb, s, sizeof(b)-1-(s-b));
+	fb_write(f, s, len-1-(s-b));
 }

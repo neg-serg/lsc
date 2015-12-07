@@ -1,8 +1,3 @@
-#ifndef LSC_FBUF_H
-#define LSC_FBUF_H
-
-#include <assert.h>
-
 typedef struct fb {
 	char *start;
 	char *end;
@@ -11,45 +6,14 @@ typedef struct fb {
 	int fd;
 } fb;
 
-void fb_init(fb *fb, int fd, size_t buflen);
-void fb_drop(fb *fb);
-void fb_flush(fb *fb);
-int fb_printf_hack(fb *fb, size_t maxlen, const char *fmt, ...);
-void fb_u(fb *fb, uint32_t x, int pad, char padc);
-int fb_fp(fb *f, long double y, int w, int p);
+void fb_init(fb *f, int fd, size_t buflen);
+void fb_drop(fb *f);
+void fb_write(fb *f, const char *b, size_t len);
+void fb_write_buf(fb *f, buf b);
+void fb_puts(fb *f, const char *b);
+void fb_flush(fb *f);
+void fb_u(fb *f, uint32_t x, int pad, char padc);
 
-static void fb_write(fb *fb, const char *b, size_t len) {
-	assert(len < fb->len);
-	if (unlikely(len > (size_t)(fb->end-fb->cursor))) {
-		fb_flush(fb);
-	}
-	fb->cursor = mempcpy(fb->cursor, b, len);
-}
+void fb_putc(fb *fb, char c);
 
-static void fb_putc(fb *fb, char c) {
-	if (fb->cursor == fb->end) { fb_flush(fb); }
-	*fb->cursor++ = c;
-}
-
-static void fb_puts(fb *fb, const char *b) {
-	fb_write(fb, b, strlen(b));
-}
-
-// write constant string
-
-#define fb_ws(fb, s) fb_write((fb), (s), sizeof(s)-1)
-
-// sized string
-struct sstr {
-	const char *s;
-	size_t len;
-};
-
-// sized string from literal
-#define SSTR(s) {(s), sizeof(s)-1}
-
-static void fb_sstr(fb *b, struct sstr ts) {
-	fb_write(b, ts.s, ts.len);
-}
-
-#endif
+#define fb_write_const(fb, s) fb_write((fb), (s), sizeof(s)-1)

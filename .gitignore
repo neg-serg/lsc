@@ -2,6 +2,7 @@
 *.so
 *.lo
 *.o
+dep.mk
 lsc
-lsc_clang
 genht-svn
+.nvimrc

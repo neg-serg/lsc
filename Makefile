@@ -1,18 +1,27 @@
+src = fbuf.c filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
+obj = $(src:.c=.o)
+
 all: lsc
 
-files = fbuf.c filevercmp.c ht.c lsc.c util.c xxhash/xxhash.c
-
 -include config.mk
-CFLAGS += $(CPPFLAGS) -std=gnu11 -D_FILE_OFFSET_BITS=64
+-include dep.mk
 
--include Makefile.dep
+syntax:
+	@$(CC) $(src) $(CFLAGS) $(CPPFLAGS) -fsyntax-only
 
-lsc: Makefile.dep
-	# CC *.c -o $@
-	@$(CC) $(files) $(CFLAGS) -o $@ $(LDFLAGS)
+lsc: $(obj)
+	# CC -o $@
+	@$(CC) -o $@ $(obj) $(LDFLAGS)
 
-Makefile.dep: $(files)
-	# CC -M	*.c > $@
-	@$(CC) $(CFLAGS) -MM $^ | sed -e 's|^[^: ]*.o:|lsc:|' > $@
+%.o: %.c
+	# CC -c $<
+	@$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
 
-.PHONY: all
+dep.mk: $(src)
+	# CC -M $^
+	@$(CC) $(CFLAGS) -MM $^ > $@
+
+clean:
+	rm -f af
+
+.PHONY: all clean syntax

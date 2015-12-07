@@ -1,3 +1,4 @@
+CPPFLAGS = -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+CFLAGS = -Wall -Wextra -pedantic -march=native -O2 -s -flto -pipe
 CC = gcc
-LDFLAGS = -Wl,-O1,--sort-common,--as-needed,-z,relro
-CFLAGS = -march=native -O2 -fPIE -pie -pipe -D_FORTIFY_SOURCE=1 -fstack-protector-strong --param=ssp-buffer-size=4 
+LDFLAGS = $(CFLAGS)

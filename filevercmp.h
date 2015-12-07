@@ -2,9 +2,8 @@
 #define LSC_FILEVERCMP_H
 
 struct suf_indexed {
-	const char *str;
+	buf b;
 	ssize_t pos;
-	size_t len;
 };
 
 struct suf_indexed new_suf_indexed(const char *s);

@@ -5,25 +5,27 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "slice.h"
 #include "filevercmp.h"
 #include "util.h"
 
-bool c_isdigit(char c);
-bool c_isalpha(char c);
-int suffix(const char *s, size_t len);
-int order(char c);
-int verrevcmp(const char *a, size_t alen, const char *b, size_t blen);
+static inline bool c_isdigit(char c)
+{
+	return (unsigned char)(c - '0') < 10;
+}
 
-bool c_isdigit(char c) { return (unsigned char)(c - '0') < 10; }
-bool c_isalpha(char c) { return (unsigned char)((c | 32) - 'a') < 26; }
+static inline bool c_isalpha(char c) 
+{
+	return (unsigned char)((c | 32) - 'a') < 26;
+}
 
-int suffix(const char *s, size_t len)
+static int suffix(buf s)
 {
 	bool read_alphat = false;
 	size_t matched = 0;
 	size_t j = 0;
-	for (ssize_t i = ((ssize_t)len - 1); i >= 0; i--) {
-		char c = s[i];
+	for (ssize_t i = ((ssize_t)s.len - 1); i >= 0; i--) {
+		char c = s.buf[i];
 		if (c_isalpha(c) || c == '~') {
 			read_alphat = true;
 		} else if (read_alphat && c == '.') {
@@ -35,10 +37,10 @@ int suffix(const char *s, size_t len)
 		}
 		j++;
 	}
-	return len - matched;
+	return s.len - matched;
 }
 
-int order(char c)
+static inline int order(char c)
 {
 	if (c_isalpha(c)) {
 		return (int)c;
@@ -50,82 +52,78 @@ int order(char c)
 	return (int)c + 256;
 }
 
-int verrevcmp(const char *a, size_t alen, const char *b, size_t blen)
+static int verrevcmp(buf a, buf b)
 {
 	size_t ai = 0, bi = 0;
-	while (ai < alen || bi < blen) {
+	while (ai < a.len || bi < b.len) {
 		int first_diff = 0;
-		while ((ai < alen && !c_isdigit(a[ai])) ||
-			(bi < blen && !c_isdigit(b[bi]))) {
-			int ac = (ai == alen) ? 0 : order(a[ai]);
-			int bc = (bi == blen) ? 0 : order(b[bi]);
-			if (ac != bc) {
+		while ((ai < a.len && !c_isdigit(a.buf[ai])) ||
+		       (bi < b.len && !c_isdigit(b.buf[bi]))) {
+			int ac = (ai == a.len) ? 0 : order(a.buf[ai]);
+			int bc = (bi == b.len) ? 0 : order(b.buf[bi]);
+			if (ac != bc)
 				return ac - bc;
-			}
 			ai++;
 			bi++;
 		}
-		while (ai < alen && a[ai] == '0') { ai++; }
-		while (bi < blen && b[bi] == '0') { bi++; }
-		while (ai < alen && c_isdigit(a[ai]) &&
-			bi < blen && c_isdigit(b[bi])) {
-			if (first_diff == 0) {
-				first_diff = (int)a[ai] - (int)b[bi];
-			}
+		while (a.buf[ai] == '0') ai++;
+		while (b.buf[bi] == '0') bi++;
+		while (c_isdigit(a.buf[ai]) && c_isdigit(b.buf[bi])) {
+			if (first_diff == 0)
+				first_diff = (int)a.buf[ai] - (int)b.buf[bi];
 			ai++;
 			bi++;
 		}
-		if (c_isdigit(a[ai])) { return  1; }
-		if (c_isdigit(b[bi])) { return -1; }
+		if (c_isdigit(a.buf[ai])) { return  1; }
+		if (c_isdigit(b.buf[bi])) { return -1; }
 		if (first_diff) { return first_diff; }
 	}
 	return 0;
 }
 
-inline struct suf_indexed new_suf_indexed(const char *s)
+struct suf_indexed new_suf_indexed(const char *s)
 {
 	return new_suf_indexed_len(s, strlen(s));
 }
 
-inline struct suf_indexed new_suf_indexed_len(const char *s, size_t len)
+struct suf_indexed new_suf_indexed_len(const char *s, size_t len)
 {
 	struct suf_indexed si;
-	si.str = s;
-	si.len = len;
+	si.b = buf_new(s, len);
 	if (len != 0 && s[0] == '.')
-		si.pos = suffix(s+1, len-1);
+		si.pos = suffix(slice(si.b, 1, len));
 	else
-		si.pos = suffix(s, len);
+		si.pos = suffix(si.b);
 	return si;
 }
 
 int filevercmp(struct suf_indexed a, struct suf_indexed b)
 {
-	int scmp = strcmp((char *)a.str, (char *)b.str);
+	int scmp = strcmp((char *)a.b.buf, (char *)b.b.buf);
 	if (scmp == 0) { return 0; }
-	if (*a.str == '\0') { return -1; }
-	if (*b.str == '\0') { return  1; }
+	if (a.b.len == 0) { return -1; }
+	if (b.b.len == 0) { return  1; }
 
 	// Special case for hidden files
-	if (a.str[0] == '.') {
-		if (b.str[0] == '.') {
-			a.str++; a.len--;
-			b.str++; b.len--;
+	if (a.b.buf[0] == '.') {
+		if (b.b.buf[0] == '.') {
+			a.b = slice(a.b, 1, a.b.len);
+			b.b = slice(b.b, 1, b.b.len);
 		} else {
 			return -1;
 		}
-	} else if (b.str[0] == '.') {
+	} else if (b.b.buf[0] == '.') {
 		return 1;
 	}
 
 	int result;
 	if ((a.pos == b.pos) &&
-		(strncmp((char *)a.str, (char *)b.str, a.pos) == 0)) {
+	    (strncmp((char *)a.b.buf, (char *)b.b.buf, a.pos) == 0)) {
 		result = verrevcmp(
-			a.str+a.pos, a.len-a.pos,
-			b.str+b.pos, b.len-b.pos);
+			slice(a.b, a.pos, a.b.len),
+			slice(b.b, b.pos, a.b.len));
 	} else {
-		result = verrevcmp(a.str, a.pos, b.str, b.pos);
+		result = verrevcmp(a.b, b.b);
 	}
 
 	return result == 0 ? scmp : result;
