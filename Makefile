@@ -22,6 +22,6 @@ dep.mk: $(src)
 	@$(CC) $(CFLAGS) -MM $^ > $@
 
 clean:
-	rm -f af
+	rm -f lsc $(obj)
 
 .PHONY: all clean syntax
