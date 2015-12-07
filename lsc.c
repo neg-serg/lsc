@@ -2,6 +2,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -64,17 +65,17 @@ enum file_kind {
 };
 
 void usage(void) {
-	logf("Usage: %s [option ...] [file ...]\n"
-		"  -C when  use colours (never, always or auto)\n"
-		"  -F       append file type indicator\n"
-		"  -a       show all files\n"
-		"  -c       use ctime\n"
-		"  -r       reverse sort\n"
-		"  -g       group directories first\n"
-		"  -S       sort by size\n"
-		"  -t       sort by time\n"
-		"  -h       show this help",
-		program_name);
+	logf("usage: %s [option ...] [file ...]"
+		"\n  -C when  use colours (never, always or auto)"
+		"\n  -F       append file type indicator"
+		"\n  -a       show all files"
+		"\n  -c       use ctime"
+		"\n  -r       reverse sort"
+		"\n  -g       group directories first"
+		"\n  -S       sort by size"
+		"\n  -t       sort by time"
+		"\n  -h       show this help"
+		, program_name);
 }
 
 struct file_info {
@@ -106,8 +107,6 @@ enum sort_type {
 };
 
 struct opts {
-	char **rest;
-	size_t restc;
 	enum sort_type sort;
 	enum use_color color;
 	bool all;
@@ -147,112 +146,6 @@ static int sorter(const void *va, const void *vb) {
 static void fi_sort(struct file_info **l, size_t len) {
 	qsort(l, len, sizeof(struct file_info *), sorter);
 }
-
-//
-// Argument parsing
-//
-
-static int parse_arg_colorize(int argc, char **argv, char **s, int i) {
-	char *use;
-	if ((*s)[1] == '\0') {
-		if (i+1 < argc) {
-			// No argument
-			warn("option '-C' needs an argument\n");
-			usage();
-			die();
-		}
-		// Argument is next one
-		use = argv[i+1];
-		i++;
-	} else {
-		// Argument is part of this one
-		use = *s+1;
-		*s += strlen(*s)-1;
-	}
-
-	if (strcmp("never", use) == 0) {
-		opts.color = COLOR_NEVER;
-	} else if (strcmp("always", use) == 0) {
-		opts.color = COLOR_ALWAYS;
-	} else if (strcmp("auto", use) == 0) {
-		opts.color = COLOR_AUTO;
-	} else {
-		warnf("invalid argument to option '-C': \"%s\"", use);
-		usage();
-		die();
-	}
-	return i;
-}
-
-static void parse_args(int argc, char **argv)
-{
-	opts.color = COLOR_AUTO;
-	opts.sort = SORT_FVER;
-	opts.rest = xmallocr((size_t)argc, sizeof(char *));
-	opts.reverse = 1;
-	size_t restc = 0;
-
-	for (int i = 1; i < argc; i++) {
-		char* s = argv[i];
-		if (s[0] == '\0' || s[0] != '-' || s[1] == '\0') {
-			// not an option
-			opts.rest[restc] = s;
-			restc++;
-			continue;
-		}
-		if (s[1] == '-' && s[2] == '\0') {
-			// "--" ends opts
-			for (i = i+1; i < argc; i++) {
-				opts.rest[restc] = argv[i];
-				restc++;
-			}
-			break;
-		}
-		// loop through opts
-		s++;
-		for (char f = *s; f != '\0'; f = *(++s)) {
-			switch (f) {
-			case 'a':
-				opts.all = true;
-				break;
-			case 'F':
-				opts.classify = true;
-				break;
-			case 'c':
-				opts.ctime = true;
-				break;
-			case 'r':
-				opts.reverse = -1;
-				break;
-			case 'g':
-				opts.group_dir = true;
-				break;
-			case 't':
-				opts.sort = SORT_TIME;
-				break;
-			case 'S':
-				opts.sort = SORT_SIZE;
-				break;
-			case 'C':
-				i = parse_arg_colorize(argc, argv, &s, i);
-				break;
-			case 'h':
-				usage();
-				exit(EXIT_SUCCESS);
-			default:
-				warnf("unsupported option '%c'", f);
-				usage();
-				die();
-			}
-		}
-	}
-	if (restc == 0) {
-		opts.rest[0] = ".";
-		restc = 1;
-	}
-	opts.restc = restc;
-}
-
 //
 // File listing
 //
@@ -439,6 +332,11 @@ static void parse_ls_color(void)
 		i += 2;
 		eq = false;
 	}
+}
+
+static void drop_ls_color(void)
+{
+	ssht_free(ht);
 }
 
 static enum file_kind color_type(mode_t mode)
@@ -781,9 +679,47 @@ static void name_no_color(fb *out, const struct file_info *f)
 		classify(out, t);
 }
 
+void parse_arg_colorize(char *s) {
+	if (strcmp("never", s) == 0) {
+		opts.color = COLOR_NEVER;
+	} else if (strcmp("always", s) == 0) {
+		opts.color = COLOR_ALWAYS;
+	} else if (strcmp("auto", s) == 0) {
+		opts.color = COLOR_AUTO;
+	} else {
+		warnf("invalid argument to option -C: %s", s);
+		usage();
+		die();
+	}
+}
+
 int main(int argc, char **argv)
 {
-	parse_args(argc, argv);
+	opts.color = COLOR_AUTO;
+	opts.sort = SORT_FVER;
+	opts.reverse = 1;
+
+	int c;
+	while ((c = getopt(argc, argv, "aFcrgtSC:h")) != -1) {
+		switch (c) {
+		case 'C': parse_arg_colorize(optarg); break;
+		case 'F': opts.classify = true; break;
+		case 'a': opts.all = true; break;
+		case 'c': opts.ctime = true; break;
+		case 'r': opts.reverse = -1; break;
+		case 'g': opts.group_dir = true; break;
+		case 'S': opts.sort = SORT_SIZE; break;
+		case 't': opts.sort = SORT_TIME; break;
+		case 'h': usage(); exit(EXIT_SUCCESS); break;
+		default: exit(EXIT_FAILURE); break;
+		}
+	}
+
+	// list . if no args
+	if (optind >= argc) {
+		argv[--optind] = ".";
+	}
+
 	parse_ls_color();
 	bool colorize =
 		(opts.color == COLOR_AUTO && isatty(STDOUT_FILENO)) ||
@@ -816,8 +752,8 @@ int main(int argc, char **argv)
 	size_t lllen = 0;
 	struct file_info *fi;
 
-	for (size_t i = 0; i < opts.restc; i++) {
-		if (ls(&l, opts.rest[i]) == -1)
+	while (optind < argc) {
+		if (ls(&l, argv[optind++]) == -1)
 			err = EXIT_FAILURE;
 		if (l.len>lllen) {
 			ll = xreallocr(ll, l.len, sizeof(*ll));
@@ -844,5 +780,7 @@ int main(int argc, char **argv)
 	};
 	fi_drop(&l);
 	fb_drop(&out);
+	free(ll);
+	drop_ls_color();
 	return err;
 }
