@@ -1,15 +1,19 @@
-src = fbuf.c filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
-obj = $(src:.c=.o)
-
-all: lsc
-
 -include config.mk
 -include dep.mk
 
-syntax:
-	@$(CC) $(src) $(CFLAGS) $(CPPFLAGS) -fsyntax-only
+bin = lsc
+src = fbuf.c filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
+obj = $(src:.c=.o)
 
-lsc: $(obj)
+CFLAGS += -std=c99
+CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+
+prefix = /usr
+bindir = $(prefix)/bin
+
+all: $(bin)
+
+$(bin): $(obj)
 	# CC -o $@
 	@$(CC) -o $@ $(obj) $(LDFLAGS)
 
@@ -18,10 +22,19 @@ lsc: $(obj)
 	@$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
 
 dep.mk: $(src)
-	# CC -M $^
+	# CC -M
 	@$(CC) $(CFLAGS) -MM $^ > $@
 
 clean:
 	rm -f lsc $(obj)
 
-.PHONY: all clean syntax
+install: $(addprefix $(DESTDIR)$(bindir)/,$(bin))
+
+$(DESTDIR)$(bindir)/%: %
+	# INSTALL $<
+	@install -Dm755 $< $@
+
+syntax:
+	@$(CC) $(src) $(CFLAGS) $(CPPFLAGS) -fsyntax-only
+
+.PHONY: all clean install syntax
