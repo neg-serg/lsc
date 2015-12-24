@@ -1,17 +1,18 @@
 -include config.mk
--include dep.mk
 
 bin = lsc
 src = fbuf.c filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
 obj = $(src:.c=.o)
 
-CFLAGS += -std=c99
-CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
-
 prefix = /usr
 bindir = $(prefix)/bin
 
 all: $(bin)
+
+-include dep.mk
+
+CFLAGS += -std=c99
+CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 
 $(bin): $(obj)
 	# CC -o $@
@@ -26,7 +27,7 @@ dep.mk: $(src)
 	@$(CC) $(CFLAGS) -MM $^ > $@
 
 clean:
-	rm -f lsc $(obj)
+	rm -f $(bin) $(obj)
 
 install: $(addprefix $(DESTDIR)$(bindir)/,$(bin))
 
