@@ -1,3 +1,5 @@
+![lsc](https://luz.lu/lsc/lsc.png)
+
 ```
 Usage: lsc [option ...] [file ...]
   -C when  use colours (never, always or auto)
