@@ -15,16 +15,13 @@ CFLAGS += -std=c99
 CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 
 $(bin): $(obj)
-	# CC -o $@
-	@$(CC) -o $@ $(obj) $(LDFLAGS)
+	$(CC) -o $@ $(obj) $(LDFLAGS)
 
 %.o: %.c
-	# CC -c $<
-	@$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
+	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
 
 dep.mk: $(src)
-	# CC -M
-	@$(CC) $(CFLAGS) -MM $^ > $@
+	$(CC) $(CFLAGS) -MM $^ > $@
 
 clean:
 	rm -f $(bin) $(obj)
@@ -32,8 +29,7 @@ clean:
 install: $(addprefix $(DESTDIR)$(bindir)/,$(bin))
 
 $(DESTDIR)$(bindir)/%: %
-	# INSTALL $<
-	@install -Dm755 $< $@
+	install -Dm755 $< $@
 
 syntax:
 	@$(CC) $(src) $(CFLAGS) $(CPPFLAGS) -fsyntax-only
