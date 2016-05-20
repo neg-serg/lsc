@@ -464,22 +464,22 @@ static void reltime_no_color(fb *out, const time_t now, const time_t then)
 	}
 
 	if (diff < MINUTE) {
-		b[4] = 's';
+		b[3] = 's';
 	} else if (diff < HOUR) {
 		diff /= MINUTE;
-		b[4] = 'm';
+		b[3] = 'm';
 	} else if (diff < HOUR*36) {
 		diff /= HOUR;
-		b[4] = 'h';
+		b[3] = 'h';
 	} else if (diff < MONTH) {
 		diff /= DAY;
-		b[4] = 'd';
+		b[3] = 'd';
 	} else if (diff < YEAR) {
 		diff /= WEEK;
-		b[4] = 'w';
+		b[3] = 'w';
 	} else {
 		diff /= YEAR;
-		b[4] = 'y';
+		b[3] = 'y';
 	}
 	fmt3(b, diff);
 	fb_write(out, b, 4);
