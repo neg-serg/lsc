@@ -303,6 +303,7 @@ static void parse_ls_color(void)
 {
 	lsc_env = getenv("LS_COLORS");
 	ht = ssht_alloc(keyhash, buf_eq);
+	if (!lsc_env) return;
 	bool eq = false;
 	size_t kb = 0, ke = 0;
 	for (size_t i = 0; lsc_env[i] != '\0'; i++) {
