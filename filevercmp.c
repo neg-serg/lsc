@@ -14,7 +14,7 @@ static inline bool c_isdigit(char c)
 	return (unsigned char)(c - '0') < 10;
 }
 
-static inline bool c_isalpha(char c) 
+static inline bool c_isalpha(char c)
 {
 	return (unsigned char)((c | 32) - 'a') < 26;
 }

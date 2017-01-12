@@ -14,7 +14,7 @@
 
 #include "xxhash/xxhash.h"
 
-#define BUFLEN 65536
+#define BUFLEN 4096
 
 #define program_name "lsc"
 
@@ -133,11 +133,11 @@ static int sorter(const void *va, const void *vb) {
 	}
 	if (opts.sort == SORT_SIZE) {
 		register ssize_t s = a->size-b->size;
-		if (s) 
+		if (s)
 			return ((s>0)-(s<0))*opts.reverse;
 	} else if (opts.sort == SORT_TIME) {
 		register time_t t = a->time - b->time;
-		if (t) 
+		if (t)
 			return ((t>0)-(t<0))*opts.reverse;
 	}
 	return filevercmp(a->name, b->name)*opts.reverse;

@@ -12,3 +12,5 @@ Usage: lsc [option ...] [file ...]
   -t       sort by time
   -h       show this help
 ```
+
+TODO: get rid of fbuf

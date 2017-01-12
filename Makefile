@@ -7,21 +7,16 @@ obj = $(src:.c=.o)
 prefix = /usr
 bindir = $(prefix)/bin
 
-all: $(bin)
-
--include dep.mk
-
 CFLAGS += -std=c99
 CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+
+all: $(bin)
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
-
-dep.mk: $(src)
-	$(CC) $(CFLAGS) -MM $^ > $@
 
 clean:
 	rm -f $(bin) $(obj)
@@ -31,7 +26,4 @@ install: $(addprefix $(DESTDIR)$(bindir)/,$(bin))
 $(DESTDIR)$(bindir)/%: %
 	install -Dm755 $< $@
 
-syntax:
-	@$(CC) $(src) $(CFLAGS) $(CPPFLAGS) -fsyntax-only
-
-.PHONY: all clean install syntax
+.PHONY: all clean install

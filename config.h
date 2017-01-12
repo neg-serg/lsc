@@ -92,19 +92,19 @@ static const buf c_modes[15] = {
 	buf_const("?"),                            // i_unknown
 };
 
-#define C_FILE     "0"       
-#define C_DIR      "38;5;12" 
+#define C_FILE     "0"
+#define C_DIR      "38;5;12"
 #define C_LINK     "38;5;8;3"
 #define C_FIFO     "38;5;126"
 #define C_SOCK     "38;5;197"
-#define C_BLK      "38;5;68" 
+#define C_BLK      "38;5;68"
 #define C_CHR      "38;5;113"
 #define C_ORPHAN   "38;5;237"
 #define C_EXEC     "38;5;174"
 #define C_DOOR     "38;5;127"
 #define C_SETUID   "38;5;137"
 #define C_SETGID   "38;5;100"
-#define C_STICKY   "38;5;86" 
+#define C_STICKY   "38;5;86"
 #define C_OW       "38;5;220"
 #define C_STICKYOW "38;5;139"
 
