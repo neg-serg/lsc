@@ -14,8 +14,6 @@
 
 #include "xxhash/xxhash.h"
 
-#define BUFLEN 4096
-
 #define program_name "lsc"
 
 #include "slice.h"

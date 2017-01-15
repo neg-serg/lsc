@@ -33,6 +33,10 @@ void *xreallocr(void *p, size_t nmemb, size_t size) {
 	return p;
 }
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 bool size_mul_overflow(size_t a, size_t b, size_t *result) {
 #if __has_builtin(__builtin_umul_overflow) || __GNUC__ >= 5
 #if INTPTR_MAX == INT32_MAX
