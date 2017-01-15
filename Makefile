@@ -1,7 +1,7 @@
 -include config.mk
 
 bin = lsc
-src = fbuf.c filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
+src = filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
 obj = $(src:.c=.o)
 
 prefix = /usr

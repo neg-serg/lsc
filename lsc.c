@@ -22,7 +22,6 @@
 #include "filevercmp.h"
 #include "ht.h"
 #include "util.h"
-#include "fbuf.h"
 #include "config.h"
 
 enum type_str_index {
@@ -404,63 +403,63 @@ void fmt3(char b[3], uint16_t x) {
 	b[2] = '0' + x%10;
 }
 
-static void reltime_color(fb *out, const time_t now, const time_t then)
+static void reltime_color(FILE *out, const time_t now, const time_t then)
 {
 	time_t diff = now - then;
 	char b[4] = "  0s";
 
 	if (diff < 0) {
-		fb_write_const(out, C_SECOND "  0s" C_END);
+		fputs(C_SECOND "  0s" C_END, out);
 		return;
 	}
 
 	if (diff <= SECOND) {
-		fb_write_const(out, C_SECOND " <1s" C_END);
+		fputs(C_SECOND " <1s" C_END, out);
 		return;
 	}
 
 	if (diff < MINUTE) {
-		fb_write_const(out, C_SECOND);
+		fputs(C_SECOND, out);
 		fmt3(b, diff);
 		b[3] = 's';
 	} else if (diff < HOUR) {
-		fb_write_const(out, C_MINUTE);
+		fputs(C_MINUTE, out);
 		diff /= MINUTE;
 		b[3] = 'm';
 	} else if (diff < HOUR*36) {
-		fb_write_const(out, C_HOUR);
+		fputs(C_HOUR, out);
 		diff /= HOUR;
 		b[3] = 'h';
 	} else if (diff < MONTH) {
-		fb_write_const(out, C_DAY);
+		fputs(C_DAY, out);
 		diff /= DAY;
 		b[3] = 'd';
 	} else if (diff < YEAR) {
-		fb_write_const(out, C_WEEK);
+		fputs(C_WEEK, out);
 		diff /= WEEK;
 		b[3] = 'w';
 	} else {
-		fb_write_const(out, C_YEAR);
+		fputs(C_YEAR, out);
 		diff /= YEAR;
 		b[3] = 'y';
 	}
 	fmt3(b, diff);
-	fb_write(out, b, 4);
-	fb_write_const(out, C_END);
+	fwrite(b, 1, 4, out);
+	fputs(C_END, out);
 }
 
-static void reltime_no_color(fb *out, const time_t now, const time_t then)
+static void reltime_no_color(FILE *out, const time_t now, const time_t then)
 {
 	time_t diff = now - then;
 	char b[4] = "  0s";
 
 	if (diff < 0) {
-		fb_write_const(out, "  0s");
+		fputs("  0s", out);
 		return;
 	}
 
 	if (diff <= SECOND) {
-		fb_write_const(out, " <1s");
+		fputs(" <1s", out);
 		return;
 	}
 
@@ -483,17 +482,17 @@ static void reltime_no_color(fb *out, const time_t now, const time_t then)
 		b[3] = 'y';
 	}
 	fmt3(b, diff);
-	fb_write(out, b, 4);
+	fwrite(b, 1, 4, out);
 }
 
 //
 // Mode printer
 //
 
-#define tc fb_write_buf
+#define tc(out, s) fwrite((s).buf, 1, (s).len, (out))
 
 // create mode strings
-static void strmode(fb *out, const mode_t mode, const buf *ts)
+static void strmode(FILE *out, const mode_t mode, const buf *ts)
 {
 	switch (mode&S_IFMT) {
 	case S_IFREG: tc(out, ts[i_none]); break;
@@ -532,7 +531,7 @@ static off_t divide(off_t x, off_t d) {
 	return (x+((d-1)/2))/d;
 }
 
-static void write_size(fb *out, off_t sz, const buf sufs[7])
+static void write_size(FILE *out, off_t sz, const buf sufs[7])
 {
 	unsigned m = 0;
 	off_t div = 1;
@@ -551,17 +550,17 @@ static void write_size(fb *out, off_t sz, const buf sufs[7])
 		b[1] = '.';
 		b[2] ='0' + v%10;
 	}
-	fb_write(out, b, 3);
-	fb_write_buf(out, sufs[m]);
+	fwrite(b, 1, 3, out);
+	fwrite(sufs[m].buf, 1, sufs[m].len, out);
 }
 
-static void size_color(fb *out, off_t size)
+static void size_color(FILE *out, off_t size)
 {
-	fb_write_const(out, C_SIZE);
+	fputs(C_SIZE, out);
 	write_size(out, size, c_sizes);
 }
 
-static void size_no_color(fb *out, off_t size)
+static void size_no_color(FILE *out, off_t size)
 {
 	write_size(out, size, n_sizes);
 }
@@ -610,17 +609,17 @@ static const char *file_color(buf name, enum file_kind t) {
 	return type_color(t);
 }
 
-void classify(fb *out, enum file_kind t) {
+void classify(FILE *out, enum file_kind t) {
 	switch (t) {
-	case T_DIR:  fb_putc(out, '/'); break;
-	case T_EXEC: fb_putc(out, '*'); break;
-	case T_FIFO: fb_putc(out, '|'); break;
-	case T_SOCK: fb_putc(out, '='); break;
+	case T_DIR:  putc('/', out); break;
+	case T_EXEC: putc('*', out); break;
+	case T_FIFO: putc('|', out); break;
+	case T_SOCK: putc('=', out); break;
 	default: ; // shut up
 	}
 }
 
-static void name_color(fb *out, const struct file_info *f)
+static void name_color(FILE *out, const struct file_info *f)
 {
 	enum file_kind t;
 	const char *c;
@@ -635,30 +634,30 @@ static void name_color(fb *out, const struct file_info *f)
 		t = color_type(f->mode);
 		c = file_color(f->name.b, t);
 	}
-	fb_write_const(out, C_ESC);
-	fb_puts(out, c);
-	fb_write_const(out, "m");
-	fb_write_buf(out, f->name.b);
-	fb_write_const(out, C_END);
+	fputs(C_ESC, out);
+	fputs(c, out);
+	fputs("m", out);
+	fwrite(f->name.b.buf, 1, f->name.b.len, out);
+	fputs(C_END, out);
 	if (f->linkname.b.buf) {
-		fb_write_const(out, C_SYM_DELIM);
-		fb_write_const(out, C_ESC);
-		fb_puts(out, c);
-		fb_write_const(out, "m");
-		fb_write_buf(out, f->linkname.b);
-		fb_write_const(out, C_END);
+		fputs(C_SYM_DELIM, out);
+		fputs(C_ESC, out);
+		fputs(c, out);
+		fputs("m", out);
+		fwrite(f->linkname.b.buf, 1, f->linkname.b.len, out);
+		fputs(C_END, out);
 	}
 	if (opts.classify)
 		switch (t) {
-		case T_DIR:  fb_write_const(out, CL_DIR); break;
-		case T_EXEC: fb_write_const(out, CL_EXEC); break;
-		case T_FIFO: fb_write_const(out, CL_FIFO); break;
-		case T_SOCK: fb_write_const(out, CL_SOCK); break;
+		case T_DIR:  fputs(CL_DIR, out); break;
+		case T_EXEC: fputs(CL_EXEC, out); break;
+		case T_FIFO: fputs(CL_FIFO, out); break;
+		case T_SOCK: fputs(CL_SOCK, out); break;
 		default: ; // shut up
 		}
 }
 
-static void name_no_color(fb *out, const struct file_info *f)
+static void name_no_color(FILE *out, const struct file_info *f)
 {
 	enum file_kind t;
 	if (f->linkname.b.buf) {
@@ -670,10 +669,10 @@ static void name_no_color(fb *out, const struct file_info *f)
 	} else {
 		t = color_type(f->mode);
 	}
-	fb_write_buf(out, f->name.b);
+	fwrite(f->name.b.buf, 1, f->name.b.len, out);
 	if (f->linkname.b.buf) {
-		fb_write_const(out, N_SYM_DELIM);
-		fb_write_buf(out, f->linkname.b);
+		fputs(N_SYM_DELIM, out);
+		fwrite(f->linkname.b.buf, 1, f->linkname.b.len, out);
 	}
 	if (opts.classify)
 		classify(out, t);
@@ -726,15 +725,13 @@ int main(int argc, char **argv)
 		opts.color == COLOR_ALWAYS;
 	struct file_list l;
 	fi_init(&l);
-	fb out;
-	fb_init(&out, STDOUT_FILENO, BUFLEN);
 	time_t now = current_time();
 	int err = EXIT_SUCCESS;
 
 	const buf *modes;
-	void (*reltime)(fb *, const time_t, const time_t);
-	void (*size)(fb *, off_t);
-	void (*name)(fb *, const struct file_info *);
+	void (*reltime)(FILE *, const time_t, const time_t);
+	void (*size)(FILE *, off_t);
+	void (*name)(FILE *, const struct file_info *);
 
 	if (colorize) {
 		modes = c_modes;
@@ -751,6 +748,7 @@ int main(int argc, char **argv)
 	struct file_info **ll = NULL;
 	size_t lllen = 0;
 	struct file_info *fi;
+	FILE *out = stdout;
 
 	while (optind < argc) {
 		if (ls(&l, argv[optind++]) == -1)
@@ -765,21 +763,19 @@ int main(int argc, char **argv)
 		fi_sort(ll, l.len);
 		for (size_t j = 0; j < l.len; j++) {
 			fi = ll[j];
-			strmode(&out, fi->mode, modes);
-			reltime(&out, now, fi->time);
-			fb_putc(&out, ' ');
-			size(&out, fi->size);
-			fb_putc(&out, ' ');
-			name(&out, fi);
-			fb_putc(&out, '\n');
+			strmode(out, fi->mode, modes);
+			reltime(out, now, fi->time);
+			putc(' ', out);
+			size(out, fi->size);
+			putc(' ', out);
+			name(out, fi);
+			putc('\n', out);
 			free((char*)(fi->name.b.buf));
 			free((char*)(fi->linkname.b.buf));
 		}
 		fi_clear(&l);
-		fb_flush(&out); // ls() can print warnings
 	};
 	fi_drop(&l);
-	fb_drop(&out);
 	free(ll);
 	drop_ls_color();
 	exit(err);
