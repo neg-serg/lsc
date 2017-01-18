@@ -1,7 +1,5 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdnoreturn.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -9,7 +7,7 @@
 #include "filevercmp.h"
 #include "util.h"
 
-static inline bool c_isdigit(char c)
+static bool c_isdigit(char c)
 {
 	return (unsigned char)(c - '0') < 10;
 }

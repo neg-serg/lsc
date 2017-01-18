@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -263,10 +262,9 @@ static int ls_readdir(struct file_list *l, char *name)
 }
 
 // get info about file/directory name
-// bufsize must be at least 1
 int ls(struct file_list *l, char *name)
 {
-	char *s = strdup(name); // make freeing simpler
+	char *s = strdup(name);
 	if (ls_stat(AT_FDCWD, s, l->data) == -1) {
 		warn_errno("cannot access %s", s);
 		free(s);
@@ -313,7 +311,6 @@ static void parse_ls_color(void)
 		if (!eq || b != ':') {
 			continue;
 		}
-
 		if (lsc_env[kb] == '*') {
 			ssht_key_t k;
 			ssht_value_t v;
@@ -322,8 +319,6 @@ static void parse_ls_color(void)
 			lsc_env[i] = '\0';
 			v = lsc_env+ke+1;
 			ssht_set(ht, k, v);
-		} else {
-			// type colors are defined at compile time
 		}
 		kb = i + 1;
 		i += 2;
@@ -395,7 +390,8 @@ static time_t current_time(void)
 	return t.tv_sec;
 }
 
-void fmt3(char b[3], uint16_t x) {
+void fmt3(char b[3], uint16_t x)
+{
 	if (x/100) b[0] = '0' + x/100;
 	if (x/100||x/10%10) b[1] = '0' + x/10%10;
 	b[2] = '0' + x%10;
@@ -441,6 +437,7 @@ static void reltime_color(FILE *out, const time_t now, const time_t then)
 		diff /= YEAR;
 		b[3] = 'y';
 	}
+
 	fmt3(b, diff);
 	fwrite(b, 1, 4, out);
 	fputs(C_END, out);
@@ -487,49 +484,49 @@ static void reltime_no_color(FILE *out, const time_t now, const time_t then)
 // Mode printer
 //
 
-#define tc(out, s) fwrite((s).buf, 1, (s).len, (out))
-
 // create mode strings
-static void strmode(FILE *out, const mode_t mode, const buf *ts)
+static void strmode(FILE *out, const mode_t mode, const char **ts)
 {
+	#define tc(out, s) fputs(ts[(s)], (out))
 	switch (mode&S_IFMT) {
-	case S_IFREG: tc(out, ts[i_none]); break;
-	case S_IFDIR: tc(out, ts[i_dir]); break;
-	case S_IFCHR: tc(out, ts[i_char]); break;
-	case S_IFBLK: tc(out, ts[i_block]); break;
-	case S_IFIFO: tc(out, ts[i_fifo]); break;
-	case S_IFLNK: tc(out, ts[i_link]); break;
-	case S_IFSOCK: tc(out, ts[i_sock]); break;
-	default: tc(out, ts[i_unknown]); break;
+	case S_IFREG: tc(out, i_none); break;
+	case S_IFDIR: tc(out, i_dir); break;
+	case S_IFCHR: tc(out, i_char); break;
+	case S_IFBLK: tc(out, i_block); break;
+	case S_IFIFO: tc(out, i_fifo); break;
+	case S_IFLNK: tc(out, i_link); break;
+	case S_IFSOCK: tc(out, i_sock); break;
+	default: tc(out, i_unknown); break;
 	}
-	tc(out, ts[mode&S_IRUSR ? i_read : i_none]);
-	tc(out, ts[mode&S_IWUSR ? i_write : i_none]);
-	tc(out, ts[mode&S_ISUID
+	tc(out, mode&S_IRUSR ? i_read : i_none);
+	tc(out, mode&S_IWUSR ? i_write : i_none);
+	tc(out, mode&S_ISUID
 		? mode&S_IXUSR ? i_uid_exec : i_uid
-		: mode&S_IXUSR ? i_exec : i_none]);
-	tc(out, ts[mode&S_IRGRP ? i_read : i_none]);
-	tc(out, ts[mode&S_IWGRP ? i_write : i_none]);
-	tc(out, ts[mode&S_ISGID
+		: mode&S_IXUSR ? i_exec : i_none);
+	tc(out, mode&S_IRGRP ? i_read : i_none);
+	tc(out, mode&S_IWGRP ? i_write : i_none);
+	tc(out, mode&S_ISGID
 		? mode&S_IXGRP ? i_uid_exec : i_uid
-		: mode&S_IXGRP ? i_exec : i_none]);
-	tc(out, ts[mode&S_IROTH ? i_read : i_none]);
-	tc(out, ts[mode&S_IWOTH ? i_write : i_none]);
-	tc(out, ts[mode&S_ISVTX
+		: mode&S_IXGRP ? i_exec : i_none);
+	tc(out, mode&S_IROTH ? i_read : i_none);
+	tc(out, mode&S_IWOTH ? i_write : i_none);
+	tc(out, mode&S_ISVTX
 		? mode&S_IXOTH ? i_sticky : i_sticky_o
-		: mode&S_IXOTH ? i_exec : i_none]);
+		: mode&S_IXOTH ? i_exec : i_none);
+	#undef tc
 }
 
-#undef tc
 
 //
 // Size printer
 //
 
-static off_t divide(off_t x, off_t d) {
+static off_t divide(off_t x, off_t d)
+{
 	return (x+((d-1)/2))/d;
 }
 
-static void write_size(FILE *out, off_t sz, const buf sufs[7])
+static void write_size(FILE *out, off_t sz, const char **sufs)
 {
 	unsigned m = 0;
 	off_t div = 1;
@@ -549,7 +546,7 @@ static void write_size(FILE *out, off_t sz, const buf sufs[7])
 		b[2] ='0' + v%10;
 	}
 	fwrite(b, 1, 3, out);
-	fwrite(sufs[m].buf, 1, sufs[m].len, out);
+	fputs(sufs[m], out);
 }
 
 static void size_color(FILE *out, off_t size)
@@ -567,27 +564,6 @@ static void size_no_color(FILE *out, off_t size)
 // Name printer
 //
 
-const char *type_color(enum file_kind t)
-{
-	switch (t) {
-	case T_FILE:     return C_FILE;
-	case T_DIR:      return C_DIR;
-	case T_LINK:     return C_LINK;
-	case T_FIFO:     return C_FIFO;
-	case T_SOCK:     return C_SOCK;
-	case T_BLK:      return C_BLK;
-	case T_CHR:      return C_CHR;
-	case T_ORPHAN:   return C_ORPHAN;
-	case T_EXEC:     return C_EXEC;
-	case T_SETUID:   return C_SETUID;
-	case T_SETGID:   return C_SETGID;
-	case T_STICKY:   return C_STICKY;
-	case T_OW:       return C_OW;
-	case T_STICKYOW: return C_STICKYOW;
-	}
-	abort();
-}
-
 static const char *suf_color(buf name)
 {
 	char *n = memrchr(name.buf, '.', name.len);
@@ -604,7 +580,7 @@ static const char *file_color(buf name, enum file_kind t) {
 			return c;
 		}
 	}
-	return type_color(t);
+	return c_kinds[t];
 }
 
 void classify(FILE *out, enum file_kind t) {
@@ -638,8 +614,7 @@ static void name_color(FILE *out, const struct file_info *f)
 	fwrite(f->name.b.buf, 1, f->name.b.len, out);
 	fputs(C_END, out);
 	if (f->linkname.b.buf) {
-		fputs(C_SYM_DELIM, out);
-		fputs(C_ESC, out);
+		fputs(C_SYM_DELIM C_ESC, out);
 		fputs(c, out);
 		fputs("m", out);
 		fwrite(f->linkname.b.buf, 1, f->linkname.b.len, out);
@@ -726,7 +701,7 @@ int main(int argc, char **argv)
 	time_t now = current_time();
 	int err = EXIT_SUCCESS;
 
-	const buf *modes;
+	const char **modes;
 	void (*reltime)(FILE *, const time_t, const time_t);
 	void (*size)(FILE *, off_t);
 	void (*name)(FILE *, const struct file_info *);
