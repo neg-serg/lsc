@@ -21,6 +21,20 @@
 #include "util.h"
 #include "config.h"
 
+void usage(void) {
+	log("usage: %s [option ...] [file ...]"
+		"\n  -C when  use colours (never, always or auto)"
+		"\n  -F       append file type indicator"
+		"\n  -a       show all files"
+		"\n  -c       use ctime"
+		"\n  -g       group directories first"
+		"\n  -S       sort by size"
+		"\n  -t       sort by time"
+		"\n  -r       reverse sort"
+		"\n  -h       show this help"
+		, program_name);
+}
+
 enum type_str_index {
 	i_none,     // Nothing else applies
 
@@ -59,20 +73,6 @@ enum file_kind {
 	T_OW,
 	T_STICKYOW,
 };
-
-void usage(void) {
-	log("usage: %s [option ...] [file ...]"
-		"\n  -C when  use colours (never, always or auto)"
-		"\n  -F       append file type indicator"
-		"\n  -a       show all files"
-		"\n  -c       use ctime"
-		"\n  -r       reverse sort"
-		"\n  -g       group directories first"
-		"\n  -S       sort by size"
-		"\n  -t       sort by time"
-		"\n  -h       show this help"
-		, program_name);
-}
 
 struct file_info {
 	struct suf_indexed name;
@@ -128,13 +128,11 @@ static int sorter(const void *va, const void *vb) {
 			return S_ISDIR(a->mode) ? -1 : 1;
 	}
 	if (opts.sort == SORT_SIZE) {
-		register ssize_t s = a->size-b->size;
-		if (s)
-			return ((s>0)-(s<0))*opts.reverse;
+		ssize_t s = a->size-b->size;
+		if (s) return ((s>0)-(s<0))*opts.reverse;
 	} else if (opts.sort == SORT_TIME) {
-		register time_t t = a->time - b->time;
-		if (t)
-			return ((t>0)-(t<0))*opts.reverse;
+		time_t t = a->time - b->time;
+		if (t) return ((t>0)-(t<0))*opts.reverse;
 	}
 	return filevercmp(a->name, b->name)*opts.reverse;
 }
@@ -142,6 +140,7 @@ static int sorter(const void *va, const void *vb) {
 static void fi_sort(struct file_info **l, size_t len) {
 	qsort(l, len, sizeof(struct file_info *), sorter);
 }
+
 //
 // File listing
 //
@@ -175,7 +174,7 @@ static int ls_readlink(int dirfd, char *name, size_t size,
 		free(buf);
 		return -1;
 	}
-	assertx((size_t)n <= size); // XXX: symlink grew, handle this better
+	assertx((size_t)n <= size); // XXX: symlink grew, handle this properly
 	buf[n] = '\0';
 	*out = new_suf_indexed_len(buf, n);
 	return 0;
@@ -336,36 +335,28 @@ static enum file_kind color_type(mode_t mode)
 #define S_IXUGO (S_IXUSR|S_IXGRP|S_IXOTH)
 	switch (mode&S_IFMT) {
 	case S_IFREG:
-		if ((mode&S_ISUID) != 0) {
+		if ((mode&S_ISUID) != 0)
 			return T_SETUID;
-		} else if ((mode&S_ISGID) != 0) {
+		if ((mode&S_ISGID) != 0)
 			return T_SETGID;
-		} else if ((mode&S_IXUGO) != 0) {
+		if ((mode&S_IXUGO) != 0)
 			return T_EXEC;
-		}
 		return T_FILE;
 	case S_IFDIR:
-		if ((mode&S_ISVTX) != 0 && (mode&S_IWOTH) != 0) {
+		if ((mode&S_ISVTX) != 0 && (mode&S_IWOTH) != 0)
 			return T_STICKYOW;
-		} else if ((mode&S_IWOTH) != 0) {
+		if ((mode&S_IWOTH) != 0)
 			return T_OW;
-		} else if ((mode&S_ISVTX) != 0) {
+		if ((mode&S_ISVTX) != 0)
 			return T_STICKY;
-		}
 		return T_DIR;
-	case S_IFLNK:
-		return T_LINK;
-	case S_IFIFO:
-		return T_FIFO;
-	case S_IFSOCK:
-		return T_SOCK;
-	case S_IFCHR:
-		return T_CHR;
-	case S_IFBLK:
-		return T_BLK;
-	default:
-		// anything else is classified as orphan
-		return T_ORPHAN;
+	case S_IFLNK:  return T_LINK;
+	case S_IFIFO:  return T_FIFO;
+	case S_IFSOCK: return T_SOCK;
+	case S_IFCHR:  return T_CHR;
+	case S_IFBLK:  return T_BLK;
+	// anything else is classified as orphan
+	default: return T_ORPHAN;
 	}
 }
 
@@ -414,7 +405,6 @@ static void reltime_color(FILE *out, const time_t now, const time_t then)
 
 	if (diff < MINUTE) {
 		fputs(C_SECOND, out);
-		fmt3(b, diff);
 		b[3] = 's';
 	} else if (diff < HOUR) {
 		fputs(C_MINUTE, out);
@@ -476,6 +466,7 @@ static void reltime_no_color(FILE *out, const time_t now, const time_t then)
 		diff /= YEAR;
 		b[3] = 'y';
 	}
+
 	fmt3(b, diff);
 	fwrite(b, 1, 4, out);
 }
@@ -665,6 +656,7 @@ void parse_arg_colorize(char *s) {
 	}
 }
 
+// uuugh
 int main(int argc, char **argv)
 {
 	opts.color = COLOR_AUTO;
@@ -688,9 +680,8 @@ int main(int argc, char **argv)
 	}
 
 	// list . if no args
-	if (optind >= argc) {
+	if (optind >= argc)
 		argv[--optind] = ".";
-	}
 
 	parse_ls_color();
 	bool colorize =
