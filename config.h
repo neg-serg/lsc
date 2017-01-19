@@ -1,9 +1,6 @@
 // Column delimiter
 #define COL " "
 
-// Symlink -> symlink target
-#define N_SYM_DELIM " -> "
-
 #define C_ESC "\033["    // Start escape sequence
 #define C_END C_ESC "0m" // End escape sequence
 
@@ -22,16 +19,6 @@
 // Number part of size
 #define C_SIZE C_ESC "38;5;216m"
 
-static const char *n_sizes[7] = {
-	"B", // Byte
-	"K", // Kibibyte
-	"M", // Mebibyte
-	"G", // Gibibyte
-	"T", // Tebibyte
-	"P", // Pebibyte
-	"E", // Exbibyte
-};
-
 static const char *c_sizes[7] = {
 	C_ESC "38;5;15m" "B" C_END, // Byte
 	C_ESC "38;5;10m" "K" C_END, // Kibibyte
@@ -40,28 +27,6 @@ static const char *c_sizes[7] = {
 	C_END "T",                  // Tebibyte
 	C_END "P",                  // Pebibyte
 	C_END "E",                  // Exbibyte
-};
-
-static const char *n_modes[15] = {
-	"-", // i_none
-
-	"r", // i_read
-	"w", // i_write
-	"x", // i_exec
-
-	"d", // i_dir
-	"c", // i_char
-	"b", // i_block
-	"p", // i_fifo
-	"l", // i_link
-
-	"s", // i_sock
-	"S", // i_uid
-	"s", // i_uid_exec
-	"t", // i_sticky
-	"T", // i_sticky_o
-
-	"?", // i_unknown
 };
 
 static const char *c_modes[15] = {
@@ -108,5 +73,3 @@ static const char *c_kinds[14] = {
 #define CL_FIFO C_ESC "38;5;1m" "|" C_END
 #define CL_SOCK C_ESC "38;5;5m" "=" C_END
 #define CL_EXEC "*"
-
-#define COLOR_SYM_TARGET true

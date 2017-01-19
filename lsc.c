@@ -23,7 +23,6 @@
 
 void usage(void) {
 	log("usage: %s [option ...] [file ...]"
-		"\n  -C when  use colours (never, always or auto)"
 		"\n  -F       append file type indicator"
 		"\n  -a       show all files"
 		"\n  -c       use ctime"
@@ -90,26 +89,19 @@ struct file_list {
 	size_t cap;
 };
 
-enum use_color {
-	COLOR_NEVER,
-	COLOR_ALWAYS,
-	COLOR_AUTO,
-};
-
 enum sort_type {
-	SORT_SIZE,
 	SORT_FVER,
+	SORT_SIZE,
 	SORT_TIME,
 };
 
 struct opts {
 	enum sort_type sort;
-	enum use_color color;
 	bool all;
 	bool classify;
 	bool ctime;
 	bool group_dir;
-	int reverse;
+	bool reverse;
 };
 
 static struct opts opts;
@@ -121,6 +113,7 @@ static struct opts opts;
 static int sorter(const void *va, const void *vb) {
 	struct file_info *a = *(struct file_info *const *)va;
 	struct file_info *b = *(struct file_info *const *)vb;
+	int rev = opts.reverse ? -1 : 1;
 	if (opts.group_dir) {
 		if (S_ISDIR(a->linkmode) != S_ISDIR(b->linkmode))
 			return S_ISDIR(a->linkmode) ? -1 : 1;
@@ -129,12 +122,12 @@ static int sorter(const void *va, const void *vb) {
 	}
 	if (opts.sort == SORT_SIZE) {
 		ssize_t s = a->size-b->size;
-		if (s) return ((s>0)-(s<0))*opts.reverse;
+		if (s) return ((s>0)-(s<0))*rev;
 	} else if (opts.sort == SORT_TIME) {
 		time_t t = a->time - b->time;
-		if (t) return ((t>0)-(t<0))*opts.reverse;
+		if (t) return ((t>0)-(t<0))*rev;
 	}
-	return filevercmp(a->name, b->name)*opts.reverse;
+	return filevercmp(a->name, b->name)*rev;
 }
 
 static void fi_sort(struct file_info **l, size_t len) {
@@ -154,13 +147,6 @@ static void fi_init(struct file_list *fl)
 
 static void fi_clear(struct file_list *fl)
 {
-	fl->len = 0;
-}
-
-static void fi_drop(struct file_list *fl)
-{
-	free(fl->data);
-	fl->cap = 0;
 	fl->len = 0;
 }
 
@@ -261,7 +247,7 @@ static int ls_readdir(struct file_list *l, char *name)
 }
 
 // get info about file/directory name
-int ls(struct file_list *l, char *name)
+static int ls(struct file_list *l, char *name)
 {
 	char *s = strdup(name);
 	if (ls_stat(AT_FDCWD, s, l->data) == -1) {
@@ -289,7 +275,6 @@ static unsigned keyhash(const ssht_key_t a)
 	return XXH32(a.buf, a.len, 0);
 }
 
-// XXX: global state
 static char *lsc_env;
 static ssht_t *ht;
 
@@ -323,11 +308,6 @@ static void parse_ls_color(void)
 		i += 2;
 		eq = false;
 	}
-}
-
-static void drop_ls_color(void)
-{
-	ssht_free(ht);
 }
 
 static enum file_kind color_type(mode_t mode)
@@ -381,14 +361,14 @@ static time_t current_time(void)
 	return t.tv_sec;
 }
 
-void fmt3(char b[3], uint16_t x)
+static void fmt3(char b[3], uint16_t x)
 {
 	if (x/100) b[0] = '0' + x/100;
 	if (x/100||x/10%10) b[1] = '0' + x/10%10;
 	b[2] = '0' + x%10;
 }
 
-static void reltime_color(FILE *out, const time_t now, const time_t then)
+static void reltime(FILE *out, const time_t now, const time_t then)
 {
 	time_t diff = now - then;
 	char b[4] = "  0s";
@@ -431,44 +411,6 @@ static void reltime_color(FILE *out, const time_t now, const time_t then)
 	fmt3(b, diff);
 	fwrite(b, 1, 4, out);
 	fputs(C_END, out);
-}
-
-static void reltime_no_color(FILE *out, const time_t now, const time_t then)
-{
-	time_t diff = now - then;
-	char b[4] = "  0s";
-
-	if (diff < 0) {
-		fputs("  0s", out);
-		return;
-	}
-
-	if (diff <= SECOND) {
-		fputs(" <1s", out);
-		return;
-	}
-
-	if (diff < MINUTE) {
-		b[3] = 's';
-	} else if (diff < HOUR) {
-		diff /= MINUTE;
-		b[3] = 'm';
-	} else if (diff < HOUR*36) {
-		diff /= HOUR;
-		b[3] = 'h';
-	} else if (diff < MONTH) {
-		diff /= DAY;
-		b[3] = 'd';
-	} else if (diff < YEAR) {
-		diff /= WEEK;
-		b[3] = 'w';
-	} else {
-		diff /= YEAR;
-		b[3] = 'y';
-	}
-
-	fmt3(b, diff);
-	fwrite(b, 1, 4, out);
 }
 
 //
@@ -517,8 +459,9 @@ static off_t divide(off_t x, off_t d)
 	return (x+((d-1)/2))/d;
 }
 
-static void write_size(FILE *out, off_t sz, const char **sufs)
+static void size(FILE *out, off_t sz, const char **sufs)
 {
+	fputs(C_SIZE, out);
 	unsigned m = 0;
 	off_t div = 1;
 	off_t u = sz;
@@ -538,17 +481,6 @@ static void write_size(FILE *out, off_t sz, const char **sufs)
 	}
 	fwrite(b, 1, 3, out);
 	fputs(sufs[m], out);
-}
-
-static void size_color(FILE *out, off_t size)
-{
-	fputs(C_SIZE, out);
-	write_size(out, size, c_sizes);
-}
-
-static void size_no_color(FILE *out, off_t size)
-{
-	write_size(out, size, n_sizes);
 }
 
 //
@@ -574,17 +506,7 @@ static const char *file_color(buf name, enum file_kind t) {
 	return c_kinds[t];
 }
 
-void classify(FILE *out, enum file_kind t) {
-	switch (t) {
-	case T_DIR:  putc('/', out); break;
-	case T_EXEC: putc('*', out); break;
-	case T_FIFO: putc('|', out); break;
-	case T_SOCK: putc('=', out); break;
-	default: ; // shut up
-	}
-}
-
-static void name_color(FILE *out, const struct file_info *f)
+static void name(FILE *out, const struct file_info *f)
 {
 	enum file_kind t;
 	const char *c;
@@ -621,56 +543,16 @@ static void name_color(FILE *out, const struct file_info *f)
 		}
 }
 
-static void name_no_color(FILE *out, const struct file_info *f)
-{
-	enum file_kind t;
-	if (f->linkname.b.buf) {
-		if (f->linkok) {
-			t = color_type(f->linkmode);
-		} else {
-			t = T_ORPHAN;
-		}
-	} else {
-		t = color_type(f->mode);
-	}
-	fwrite(f->name.b.buf, 1, f->name.b.len, out);
-	if (f->linkname.b.buf) {
-		fputs(N_SYM_DELIM, out);
-		fwrite(f->linkname.b.buf, 1, f->linkname.b.len, out);
-	}
-	if (opts.classify)
-		classify(out, t);
-}
-
-void parse_arg_colorize(char *s) {
-	if (strcmp("never", s) == 0) {
-		opts.color = COLOR_NEVER;
-	} else if (strcmp("always", s) == 0) {
-		opts.color = COLOR_ALWAYS;
-	} else if (strcmp("auto", s) == 0) {
-		opts.color = COLOR_AUTO;
-	} else {
-		warn("invalid argument to option -C: %s", s);
-		usage();
-		exit(EXIT_FAILURE);
-	}
-}
-
 // uuugh
 int main(int argc, char **argv)
 {
-	opts.color = COLOR_AUTO;
-	opts.sort = SORT_FVER;
-	opts.reverse = 1;
-
 	int c;
-	while ((c = getopt(argc, argv, "aFcrgtSC:h")) != -1) {
+	while ((c = getopt(argc, argv, "aFcrgtS:h")) != -1) {
 		switch (c) {
-		case 'C': parse_arg_colorize(optarg); break;
 		case 'F': opts.classify = true; break;
 		case 'a': opts.all = true; break;
 		case 'c': opts.ctime = true; break;
-		case 'r': opts.reverse = -1; break;
+		case 'r': opts.reverse = true; break;
 		case 'g': opts.group_dir = true; break;
 		case 'S': opts.sort = SORT_SIZE; break;
 		case 't': opts.sort = SORT_TIME; break;
@@ -680,39 +562,17 @@ int main(int argc, char **argv)
 	}
 
 	// list . if no args
-	if (optind >= argc)
-		argv[--optind] = ".";
+	if (optind >= argc) argv[--optind] = ".";
 
 	parse_ls_color();
-	bool colorize =
-		(opts.color == COLOR_AUTO && isatty(STDOUT_FILENO)) ||
-		opts.color == COLOR_ALWAYS;
 	struct file_list l;
 	fi_init(&l);
 	time_t now = current_time();
-	int err = EXIT_SUCCESS;
-
-	const char **modes;
-	void (*reltime)(FILE *, const time_t, const time_t);
-	void (*size)(FILE *, off_t);
-	void (*name)(FILE *, const struct file_info *);
-
-	if (colorize) {
-		modes = c_modes;
-		reltime = reltime_color;
-		size = size_color;
-		name = name_color;
-	} else {
-		modes = n_modes;
-		reltime = reltime_no_color;
-		size = size_no_color;
-		name = name_no_color;
-	}
-
 	struct file_info **ll = NULL;
 	size_t lllen = 0;
 	struct file_info *fi;
 	FILE *out = stdout;
+	int err = EXIT_SUCCESS;
 
 	while (optind < argc) {
 		if (ls(&l, argv[optind++]) == -1)
@@ -727,10 +587,10 @@ int main(int argc, char **argv)
 		fi_sort(ll, l.len);
 		for (size_t j = 0; j < l.len; j++) {
 			fi = ll[j];
-			strmode(out, fi->mode, modes);
+			strmode(out, fi->mode, c_modes);
 			reltime(out, now, fi->time);
 			putc(' ', out);
-			size(out, fi->size);
+			size(out, fi->size, c_sizes);
 			putc(' ', out);
 			name(out, fi);
 			putc('\n', out);
@@ -739,8 +599,6 @@ int main(int argc, char **argv)
 		}
 		fi_clear(&l);
 	};
-	fi_drop(&l);
-	free(ll);
-	drop_ls_color();
+
 	exit(err);
 }
