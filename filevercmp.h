@@ -1,6 +1,6 @@
 struct suf_indexed {
 	buf b;
-	ssize_t pos;
+	size_t pos;
 };
 
 struct suf_indexed new_suf_indexed(const char *s);

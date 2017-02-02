@@ -11,12 +11,12 @@ static bool c_isdigit(char c)
 	return (unsigned char)(c - '0') < 10;
 }
 
-static inline bool c_isalpha(char c)
+static bool c_isalpha(char c)
 {
 	return (unsigned char)((c | 32) - 'a') < 26;
 }
 
-static int suffix(buf s)
+static size_t suffix(buf s)
 {
 	bool read_alphat = false;
 	size_t matched = 0;
@@ -37,10 +37,10 @@ static int suffix(buf s)
 	return s.len - matched;
 }
 
-static inline int order(char c)
+static int order(char c)
 {
 	if (c_isalpha(c)) {
-		return (int)c;
+		return c;
 	} else if (c_isdigit(c)) {
 		return 0;
 	} else if (c == '~') {
@@ -66,8 +66,8 @@ static int verrevcmp(buf a, buf b)
 		while (a.buf[ai] == '0') ai++;
 		while (b.buf[bi] == '0') bi++;
 		while (c_isdigit(a.buf[ai]) && c_isdigit(b.buf[bi])) {
-			if (first_diff == 0)
-				first_diff = (int)a.buf[ai] - (int)b.buf[bi];
+			if (!first_diff)
+				first_diff = a.buf[ai] - b.buf[bi];
 			ai++;
 			bi++;
 		}
