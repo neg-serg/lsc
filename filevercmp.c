@@ -113,15 +113,15 @@ int filevercmp(struct suf_indexed a, struct suf_indexed b)
 		return 1;
 	}
 
+	buf ab, bb;
+	ab = slice(a.b, 0, a.pos ? a.pos : a.b.len);
+	bb = slice(b.b, 0, b.pos ? b.pos : b.b.len);
 	int result;
 	if ((a.pos == b.pos) &&
 	    (strncmp((char *)a.b.buf, (char *)b.b.buf, a.pos) == 0)) {
-		result = verrevcmp(
-			slice(a.b, a.pos, a.b.len),
-			slice(b.b, b.pos, a.b.len));
-	} else {
-		result = verrevcmp(a.b, b.b);
+		ab = slice(a.b, a.pos, a.b.len);
+		bb = slice(b.b, b.pos, b.b.len);
 	}
-
+	result = verrevcmp(ab, bb);
 	return result == 0 ? scmp : result;
 }
