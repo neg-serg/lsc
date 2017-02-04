@@ -1,8 +1,4 @@
-*.a
-*.so
-*.lo
 *.o
-dep.mk
-lsc
+config.mk
 genht-svn
-.nvimrc
+lsc
