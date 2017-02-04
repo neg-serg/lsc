@@ -5,7 +5,7 @@
 #define C_END C_ESC "0m" // End escape sequence
 
 // Symlink -> symlink target
-#define C_SYM_DELIM " " C_ESC "38;5;8m" "→" C_END " "
+#define C_SYM_DELIM " " C_ESC "38;5;8m" "->" C_END " "
 
 // Colours of relative times
 #define C_SECOND C_ESC "38;5;12m"
