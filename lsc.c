@@ -111,8 +111,8 @@ static struct opts opts;
 //
 
 static int sorter(const void *va, const void *vb) {
-	struct file_info *a = *(struct file_info *const *)va;
-	struct file_info *b = *(struct file_info *const *)vb;
+	struct file_info *a = (struct file_info *const)va;
+	struct file_info *b = (struct file_info *const)vb;
 	int rev = opts.reverse ? -1 : 1;
 	if (opts.group_dir) {
 		if (S_ISDIR(a->linkmode) != S_ISDIR(b->linkmode))
@@ -130,24 +130,30 @@ static int sorter(const void *va, const void *vb) {
 	return filevercmp(a->name, b->name)*rev;
 }
 
-static void fi_sort(struct file_info **l, size_t len) {
-	qsort(l, len, sizeof(struct file_info *), sorter);
-}
-
 //
 // File listing
 //
 
-static void fi_init(struct file_list *fl)
+static void fi_free(struct file_info *fi)
+{
+	free((char*)(fi->name.b.buf));
+	free((char*)(fi->linkname.b.buf));
+}
+
+static void fl_init(struct file_list *fl)
 {
 	fl->data = xmallocr(128, sizeof(struct file_info));
 	fl->cap = 128;
 	fl->len = 0;
 }
 
-static void fi_clear(struct file_list *fl)
+static void fl_clear(struct file_list *fl)
 {
 	fl->len = 0;
+}
+
+static void fl_sort(struct file_list fl) {
+	qsort(fl.data, fl.len, sizeof(struct file_info), sorter);
 }
 
 // guarantees that returned string is size long
@@ -183,9 +189,7 @@ static int ls_stat(int dirfd, char *name, struct file_info *out)
 	out->linkok = true;
 
 	if (S_ISLNK(out->mode)) {
-		int ln = ls_readlink(dirfd, name,
-			st.st_size,
-			&(out->linkname));
+		int ln = ls_readlink(dirfd, name, st.st_size, &(out->linkname));
 		if (ln == -1) {
 			out->linkok = false;
 			return 0;
@@ -202,9 +206,8 @@ static int ls_stat(int dirfd, char *name, struct file_info *out)
 
 static int ls_readdir(struct file_list *l, char *name)
 {
-	for (size_t l = strlen(name)-1; name[l] == '/' && l>1; l--) {
+	for (size_t l = strlen(name)-1; name[l] == '/' && l>1; l--)
 		name[l] = '\0';
-	}
 	int err = 0;
 	DIR *dir = opendir(name);
 	if (dir == NULL) {
@@ -240,9 +243,8 @@ static int ls_readdir(struct file_list *l, char *name)
 		}
 		l->len++;
 	}
-	if (closedir(dir) == -1) {
+	if (closedir(dir) == -1)
 		return -1;
-	}
 	return err;
 }
 
@@ -257,9 +259,8 @@ static int ls(struct file_list *l, char *name)
 	}
 	if (S_ISDIR(l->data->mode)) {
 		free(s);
-		if (ls_readdir(l, name) == -1) {
+		if (ls_readdir(l, name) == -1)
 			return -1;
-		}
 		return 0;
 	}
 	l->len = 1;
@@ -282,7 +283,8 @@ static void parse_ls_color(void)
 {
 	lsc_env = getenv("LS_COLORS");
 	ht = ssht_alloc(keyhash, buf_eq);
-	if (!lsc_env) return;
+	if (!lsc_env)
+		return;
 	bool eq = false;
 	size_t kb = 0, ke = 0;
 	for (size_t i = 0; lsc_env[i] != '\0'; i++) {
@@ -292,9 +294,8 @@ static void parse_ls_color(void)
 			eq = true;
 			continue;
 		}
-		if (!eq || b != ':') {
+		if (!eq || b != ':')
 			continue;
-		}
 		if (lsc_env[kb] == '*') {
 			ssht_key_t k;
 			ssht_value_t v;
@@ -355,9 +356,8 @@ static enum file_kind color_type(mode_t mode)
 static time_t current_time(void)
 {
 	struct timespec t;
-	if (clock_gettime(CLOCK_REALTIME, &t) == -1) {
+	if (clock_gettime(CLOCK_REALTIME, &t) == -1)
 		die_errno("%s", "current_time");
-	}
 	return t.tv_sec;
 }
 
@@ -499,9 +499,8 @@ static const char *file_color(buf name, enum file_kind t) {
 	const char *c;
 	if (t == T_FILE || t == T_LINK) {
 		c = suf_color(name);
-		if (c != NULL) {
+		if (c != NULL)
 			return c;
-		}
 	}
 	return c_kinds[t];
 }
@@ -511,11 +510,10 @@ static void name(FILE *out, const struct file_info *f)
 	enum file_kind t;
 	const char *c;
 	if (f->linkname.b.buf) {
-		if (f->linkok) {
+		if (f->linkok)
 			t = color_type(f->linkmode);
-		} else {
+		else
 			t = T_ORPHAN;
-		}
 		c = file_color(f->linkname.b, t);
 	} else {
 		t = color_type(f->mode);
@@ -562,31 +560,23 @@ int main(int argc, char **argv)
 	}
 
 	// list . if no args
-	if (optind >= argc) argv[--optind] = ".";
+	// can replace argv[0]
+	if (optind >= argc)
+		argv[--optind] = ".";
 
 	parse_ls_color();
 	struct file_list l;
-	fi_init(&l);
+	fl_init(&l);
 	time_t now = current_time();
-	struct file_info **ll = NULL;
-	size_t lllen = 0;
-	struct file_info *fi;
 	FILE *out = stdout;
 	int err = EXIT_SUCCESS;
 
 	while (optind < argc) {
 		if (ls(&l, argv[optind++]) == -1)
 			err = EXIT_FAILURE;
-		if (l.len>lllen) {
-			ll = xreallocr(ll, l.len, sizeof(*ll));
-			lllen=l.len;
-		}
-		for (size_t j = 0; j < l.len; j++) {
-			ll[j] = &l.data[j];
-		}
-		fi_sort(ll, l.len);
-		for (size_t j = 0; j < l.len; j++) {
-			fi = ll[j];
+		fl_sort(l);
+		for (size_t i = 0; i < l.len; i++) {
+			struct file_info *fi = &l.data[i];
 			strmode(out, fi->mode, c_modes);
 			reltime(out, now, fi->time);
 			putc(' ', out);
@@ -594,10 +584,9 @@ int main(int argc, char **argv)
 			putc(' ', out);
 			name(out, fi);
 			putc('\n', out);
-			free((char*)(fi->name.b.buf));
-			free((char*)(fi->linkname.b.buf));
+			fi_free(fi);
 		}
-		fi_clear(&l);
+		fl_clear(&l);
 	};
 
 	exit(err);

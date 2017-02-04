@@ -10,11 +10,11 @@
 // Colours of relative times
 #define C_SECOND C_ESC "38;5;12m"
 #define C_MINUTE C_ESC "38;5;9m"
-#define C_HOUR   C_ESC "38;5;1m"
+#define C_HOUR   C_ESC "31m"
 #define C_DAY    C_ESC "38;5;8m"
 #define C_WEEK   C_ESC "38;5;237m"
 #define C_MONTH  C_ESC "38;5;237m"
-#define C_YEAR   C_ESC "38;5;0m"
+#define C_YEAR   C_ESC "30m"
 
 // Number part of size
 #define C_SIZE C_ESC "38;5;216m"
@@ -30,9 +30,9 @@ static const char *c_sizes[7] = {
 };
 
 static const char *c_modes[15] = {
-	C_ESC "38;5;0m"   "-",         // i_none
+	C_ESC "30m"       "-",         // i_none
 
-	C_ESC "38;5;2m"   "r",         // i_read
+	C_ESC "32m"       "r",         // i_read
 	C_ESC "38;5;216m" "w",         // i_write
 	C_ESC "38;5;131m" "x",         // i_exec
 
@@ -70,6 +70,6 @@ static const char *c_kinds[14] = {
 
 #define CL_DIR  "/"
 #define CL_LINK "@"
-#define CL_FIFO C_ESC "38;5;1m" "|" C_END
-#define CL_SOCK C_ESC "38;5;5m" "=" C_END
+#define CL_FIFO C_ESC "31m" "|" C_END
+#define CL_SOCK C_ESC "35m" "=" C_END
 #define CL_EXEC "*"
