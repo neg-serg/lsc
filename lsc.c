@@ -22,7 +22,7 @@
 #include "config.h"
 
 void usage(void) {
-	log("usage: %s [option ...] [file ...]"
+	log("Usage: %s [option ...] [file ...]"
 		"\n  -F       append file type indicator"
 		"\n  -a       show all files"
 		"\n  -c       use ctime"
