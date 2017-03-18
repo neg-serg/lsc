@@ -30,42 +30,42 @@ static const char *c_sizes[7] = {
 };
 
 static const char *c_modes[15] = {
-	C_ESC "30m"       "-",         // i_none
+	C_ESC "30m"        "-",         // i_none
 
-	C_ESC "32m"       "r",         // i_read
-	C_ESC "38;5;7m"   "w",          // i_write
-	C_ESC "38;5;1m"   "x",         // i_exec
+	C_ESC "32m"        "r",         // i_read
+	C_ESC "38;5;7m"    "w",         // i_write
+	C_ESC "38;5;1m"    "x",         // i_exec
 
-	C_ESC "01;38;5;2m"   "d"   C_END, // i_dir
-	C_ESC "0m"        "c",         // i_char
-	C_ESC "0m"        "b",         // i_block
-	C_ESC "0m"        "p",         // i_fifo
-	C_ESC "38;5;220m" "l"   C_END, // i_link
+	C_ESC "01;38;5;2m" "d"   C_END, // i_dir
+	C_ESC "0m"         "c",         // i_char
+	C_ESC "0m"         "b",         // i_block
+	C_ESC "0m"         "p",         // i_fifo
+	C_ESC "38;5;220m"  "l"   C_END, // i_link
 
-	C_ESC "38;5;161m" "s",         // i_sock
-	C_ESC "38;5;220m" "S",         // i_uid
-	C_ESC "38;5;161m" "s",         // i_uid_exec
-	C_ESC "38;5;220m" "t",         // i_sticky
-	C_ESC "38;5;220m" "T"   C_END, // i_sticky_o
+	C_ESC "38;5;161m"  "s",         // i_sock
+	C_ESC "38;5;220m"  "S",         // i_uid
+	C_ESC "38;5;161m"  "s",         // i_uid_exec
+	C_ESC "38;5;220m"  "t",         // i_sticky
+	C_ESC "38;5;220m"  "T"   C_END, // i_sticky_o
 
-	"?",                           // i_unknown
+	"?",                            // i_unknown
 };
 
 static const char *c_kinds[14] = {
-	"0",        // T_FILE
-	"38;5;4",   // T_DIR
-	"38;5;8;3", // T_LINK
-	"38;5;126", // T_FIFO
-	"38;5;197", // T_SOCK
-	"38;5;68",  // T_BLK
-	"38;5;113", // T_CHR
-	"38;5;237", // T_ORPHAN
-	"38;5;174", // T_EXEC
-	"38;5;137", // T_SETUID
-	"38;5;100", // T_SETGID
-	"38;5;86",  // T_STICKY
-	"38;5;220", // T_OW
-	"38;5;139"  // T_STICKYOW
+	"0",                      // T_FILE
+	"38;5;4",                 // T_DIR
+	"38;5;05",                // T_LINK
+	"38;5;126",               // T_FIFO
+	"01;38;5;075",            // T_SOCK
+	"38;5;24",                // T_BLK
+	"38;5;24;1",              // T_CHR
+	"40;31;01",               // T_ORPHAN
+	"00;04;32",               // T_EXEC
+	"38;5;37",                // T_SETUID
+	"38;5;37",                // T_SETGID
+	"38;5;86",                // T_STICKY
+	"38;5;86;48;5;234;1",     // T_OW
+	"38;5;86;48;5;234"        // T_STICKYOW
 };
 
 #define CL_DIR  "/"
