@@ -578,10 +578,11 @@ int main(int argc, char **argv)
 		for (size_t i = 0; i < l.len; i++) {
 			struct file_info *fi = &l.data[i];
 			strmode(out, fi->mode, c_modes);
+			fputs("\033[38;5;235m│\033[0m",out);
 			reltime(out, now, fi->time);
-			putc(' ', out);
+			fputs("\033[38;5;235m ▏\033[0m",out);
 			size(out, fi->size, c_sizes);
-			putc(' ', out);
+			fputs("\033[38;5;235m│\033[0m",out);
 			name(out, fi);
 			putc('\n', out);
 			fi_free(fi);

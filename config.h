@@ -5,23 +5,23 @@
 #define C_END C_ESC "0m" // End escape sequence
 
 // Symlink -> symlink target
-#define C_SYM_DELIM " " C_ESC "38;5;8m" "->" C_END " "
+#define C_SYM_DELIM " " C_ESC "38;5;1m" "->" C_END " "
 
 // Colours of relative times
-#define C_SECOND C_ESC "38;5;12m"
-#define C_MINUTE C_ESC "38;5;9m"
-#define C_HOUR   C_ESC "31m"
-#define C_DAY    C_ESC "38;5;8m"
-#define C_WEEK   C_ESC "38;5;237m"
-#define C_MONTH  C_ESC "38;5;237m"
-#define C_YEAR   C_ESC "30m"
+#define C_SECOND C_ESC "38;5;4m"
+#define C_MINUTE C_ESC "38;5;4m"
+#define C_HOUR   C_ESC "38;5;4m"
+#define C_DAY    C_ESC "38;5;4m"
+#define C_WEEK   C_ESC "38;5;4m"
+#define C_MONTH  C_ESC "38;5;4m"
+#define C_YEAR   C_ESC "38;5;8m"
 
 // Number part of size
-#define C_SIZE C_ESC "38;5;216m"
+#define C_SIZE C_ESC "38;5;7m"
 
 static const char *c_sizes[7] = {
-	C_ESC "38;5;15m" "B" C_END, // Byte
-	C_ESC "38;5;10m" "K" C_END, // Kibibyte
+	C_ESC "38;5;8m"  "B" C_END,  // Byte
+	C_ESC "38;5;2m"  "K" C_END, // Kibibyte
 	C_ESC "38;5;14m" "M" C_END, // Mebibyte
 	C_ESC "38;5;12m" "G" C_END, // Gibibyte
 	C_END "T",                  // Tebibyte
@@ -33,8 +33,8 @@ static const char *c_modes[15] = {
 	C_ESC "30m"       "-",         // i_none
 
 	C_ESC "32m"       "r",         // i_read
-	C_ESC "38;5;216m" "w",         // i_write
-	C_ESC "38;5;131m" "x",         // i_exec
+	C_ESC "38;5;15m"  "w",         // i_write
+	C_ESC "38;5;1m"   "x",         // i_exec
 
 	C_ESC "38;5;10m"  "d"   C_END, // i_dir
 	C_ESC "0m"        "c",         // i_char
@@ -53,7 +53,7 @@ static const char *c_modes[15] = {
 
 static const char *c_kinds[14] = {
 	"0",        // T_FILE
-	"38;5;12",  // T_DIR
+	"38;5;4",   // T_DIR
 	"38;5;8;3", // T_LINK
 	"38;5;126", // T_FIFO
 	"38;5;197", // T_SOCK
