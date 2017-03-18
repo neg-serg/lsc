@@ -1,6 +1,6 @@
 -include config.mk
 
-bin = lsc
+bin = l
 src = filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
 obj = $(src:.c=.o)
 
