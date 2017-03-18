@@ -577,6 +577,7 @@ int main(int argc, char **argv)
 		fl_sort(l);
 		for (size_t i = 0; i < l.len; i++) {
 			struct file_info *fi = &l.data[i];
+			putc(' ',out);
 			strmode(out, fi->mode, c_modes);
 			fputs("\033[38;5;235m│\033[0m",out);
 			reltime(out, now, fi->time);
