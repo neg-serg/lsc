@@ -1,14 +1,14 @@
 -include config.mk
 
 bin = lsc
-src = filevercmp.c ht.c lsc.c slice.c util.c xxhash/xxhash.c
+src = filevercmp.c ht.c lsc.c util.c xxhash/xxhash.c
 obj = $(src:.c=.o)
 
 prefix = /usr
 bindir = $(prefix)/bin
 
 CFLAGS += -std=c99
-CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+CPPFLAGS += -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64
 
 all: $(bin)
 

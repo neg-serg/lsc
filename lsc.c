@@ -487,6 +487,14 @@ static void size(FILE *out, off_t sz, const char **sufs)
 // Name printer
 //
 
+static void *memrchr(const void *m, int c, size_t n)
+{
+	const unsigned char *s = m;
+	c = (unsigned char)c;
+	while (n--) if (s[n]==c) return (void *)(s+n);
+	return 0;
+}
+
 static const char *suf_color(buf name)
 {
 	char *n = memrchr(name.buf, '.', name.len);
