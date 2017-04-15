@@ -1,4 +1,4 @@
-![lsc](https://luz.lu/lsc/lsc.png)
+![lsc](http://i.imgur.com/bGLHJ3b.png)
 
 ```
 Usage: lsc [option ...] [file ...]
