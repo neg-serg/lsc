@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
@@ -6,16 +7,6 @@
 #include "filevercmp.h"
 #include "util.h"
 
-static bool c_isdigit(char c)
-{
-	return (unsigned char)(c - '0') < 10;
-}
-
-static bool c_isalpha(char c)
-{
-	return (unsigned char)((c | 32) - 'a') < 26;
-}
-
 static size_t suffix(buf s)
 {
 	bool read_alphat = false;
@@ -23,11 +14,11 @@ static size_t suffix(buf s)
 	size_t j = 0;
 	for (ssize_t i = ((ssize_t)s.len - 1); i >= 0; i--) {
 		char c = s.buf[i];
-		if (c_isalpha(c) || c == '~') {
+		if (isalpha(c) || c == '~') {
 			read_alphat = true;
 		} else if (read_alphat && c == '.') {
 			matched = j + 1;
-		} else if (c_isdigit(c)) {
+		} else if (isdigit(c)) {
 			read_alphat = false;
 		} else {
 			break;
@@ -39,9 +30,9 @@ static size_t suffix(buf s)
 
 static int order(char c)
 {
-	if (c_isalpha(c)) {
+	if (isalpha(c)) {
 		return c;
-	} else if (c_isdigit(c)) {
+	} else if (isdigit(c)) {
 		return 0;
 	} else if (c == '~') {
 		return -1;
@@ -54,8 +45,8 @@ static int verrevcmp(buf a, buf b)
 	size_t ai = 0, bi = 0;
 	while (ai < a.len || bi < b.len) {
 		int first_diff = 0;
-		while ((ai < a.len && !c_isdigit(a.buf[ai])) ||
-		       (bi < b.len && !c_isdigit(b.buf[bi]))) {
+		while ((ai < a.len && !isdigit(a.buf[ai])) ||
+		       (bi < b.len && !isdigit(b.buf[bi]))) {
 			int ac = (ai == a.len) ? 0 : order(a.buf[ai]);
 			int bc = (bi == b.len) ? 0 : order(b.buf[bi]);
 			if (ac != bc)
@@ -65,14 +56,14 @@ static int verrevcmp(buf a, buf b)
 		}
 		while (a.buf[ai] == '0') ai++;
 		while (b.buf[bi] == '0') bi++;
-		while (c_isdigit(a.buf[ai]) && c_isdigit(b.buf[bi])) {
+		while (isdigit(a.buf[ai]) && isdigit(b.buf[bi])) {
 			if (!first_diff)
 				first_diff = a.buf[ai] - b.buf[bi];
 			ai++;
 			bi++;
 		}
-		if (c_isdigit(a.buf[ai])) { return  1; }
-		if (c_isdigit(b.buf[bi])) { return -1; }
+		if (isdigit(a.buf[ai])) { return  1; }
+		if (isdigit(b.buf[bi])) { return -1; }
 		if (first_diff) { return first_diff; }
 	}
 	return 0;
