@@ -184,7 +184,7 @@ static int ls_stat(int dirfd, char *name, struct file_info *out)
 	out->linkname = (struct suf_indexed) {0};
 	out->mode = st.st_mode;
 	out->linkmode = 0;
-	out->time = opts.ctime ? st.st_ctim.tv_sec : st.st_mtim.tv_sec;
+	out->time = opts.ctime ? st.st_ctime : st.st_mtime;
 	out->size = st.st_size;
 	out->linkok = true;
 
@@ -418,7 +418,7 @@ static void reltime(FILE *out, const time_t now, const time_t then)
 //
 
 // create mode strings
-static void strmode(FILE *out, const mode_t mode, const char **ts)
+static void strmode_(FILE *out, const mode_t mode, const char **ts)
 {
 	#define tc(out, s) fputs(ts[(s)], (out))
 	switch (mode&S_IFMT) {
@@ -549,7 +549,6 @@ static void name(FILE *out, const struct file_info *f)
 		}
 }
 
-// uuugh
 int main(int argc, char **argv)
 {
 	int c;
@@ -585,7 +584,7 @@ int main(int argc, char **argv)
 		fl_sort(l);
 		for (size_t i = 0; i < l.len; i++) {
 			struct file_info *fi = &l.data[i];
-			strmode(out, fi->mode, c_modes);
+			strmode_(out, fi->mode, c_modes);
 			reltime(out, now, fi->time);
 			putc(' ', out);
 			size(out, fi->size, c_sizes);

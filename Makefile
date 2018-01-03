@@ -7,6 +7,7 @@ obj = $(src:.c=.o)
 prefix = /usr
 bindir = $(prefix)/bin
 
+CFLAGS ?= -O2 -Wall -Wextra -pedantic
 CFLAGS += -std=c99
 CPPFLAGS += -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64
 
