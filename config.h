@@ -30,25 +30,25 @@ static const char *c_sizes[7] = {
 };
 
 static const char *c_modes[15] = {
-	C_ESC "30m"       "-",         // i_none
+	C_ESC "30m"       "-",         // I_NONE
 
-	C_ESC "32m"       "r",         // i_read
-	C_ESC "38;5;216m" "w",         // i_write
-	C_ESC "38;5;131m" "x",         // i_exec
+	C_ESC "32m"       "r",         // I_READ
+	C_ESC "38;5;216m" "w",         // I_WRITE
+	C_ESC "38;5;131m" "x",         // I_EXEC
 
-	C_ESC "38;5;10m"  "d"   C_END, // i_dir
-	C_ESC "0m"        "c",         // i_char
-	C_ESC "0m"        "b",         // i_block
-	C_ESC "0m"        "p",         // i_fifo
-	C_ESC "38;5;220m" "l"   C_END, // i_link
+	C_ESC "38;5;10m"  "d"   C_END, // I_DIR
+	C_ESC "0m"        "c",         // I_CHAR
+	C_ESC "0m"        "b",         // I_BLOCK
+	C_ESC "0m"        "p",         // I_FIFO
+	C_ESC "38;5;220m" "l"   C_END, // I_LINK
 
-	C_ESC "38;5;161m" "s",         // i_sock
-	C_ESC "38;5;220m" "S",         // i_uid
-	C_ESC "38;5;161m" "s",         // i_uid_exec
-	C_ESC "38;5;220m" "t",         // i_sticky
-	C_ESC "38;5;220m" "T"   C_END, // i_sticky_o
+	C_ESC "38;5;161m" "s",         // I_SOCK
+	C_ESC "38;5;220m" "S",         // I_UID
+	C_ESC "38;5;161m" "s",         // I_UID_EXEC
+	C_ESC "38;5;220m" "t",         // I_STICKY
+	C_ESC "38;5;220m" "T"   C_END, // I_STICKY_O
 
-	"?",                           // i_unknown
+	"?",                           // I_UNKNOWN
 };
 
 static const char *c_kinds[14] = {

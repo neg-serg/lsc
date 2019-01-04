@@ -33,7 +33,7 @@ void *xreallocr(void *p, size_t nmemb, size_t size) {
 	return p;
 }
 
-#define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
+#define MUL_NO_OVERFLOW ((size_t)1 << (sizeof(size_t) * 4))
 
 bool size_mul_overflow(size_t a, size_t b, size_t *result) {
     *result = a * b;

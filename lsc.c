@@ -35,25 +35,25 @@ void usage(void) {
 }
 
 enum type_str_index {
-	i_none,     // Nothing else applies
+	I_NONE,     // Nothing else applies
 
-	i_read,     // Readable
-	i_write,    // Writeable
-	i_exec,     // Executable
+	I_READ,     // Readable
+	I_WRITE,    // Writeable
+	I_EXEC,     // Executable
 
-	i_dir,      // Directory
-	i_char,     // Character device
-	i_block,    // Block device
-	i_fifo,     // FIFO
-	i_link,     // Symlink
+	I_DIR,      // Directory
+	I_CHAR,     // Character device
+	I_BLOCK,    // Block device
+	I_FIFO,     // FIFO
+	I_LINK,     // Symlink
 
-	i_sock,     // Socket
-	i_uid,      // SUID
-	i_uid_exec, // SUID and executable
-	i_sticky,   // Sticky
-	i_sticky_o, // Sticky, writeable by others
+	I_SOCK,     // Socket
+	I_UID,      // SUID
+	I_UID_EXEC, // SUID and executable
+	I_STICKY,   // Sticky
+	I_STICKY_O, // Sticky, writeable by others
 
-	i_unknown,  // Anything else
+	I_UNKNOWN,  // Anything else
 };
 
 enum file_kind {
@@ -142,8 +142,8 @@ static void fi_free(struct file_info *fi)
 
 static void fl_init(struct file_list *fl)
 {
-	fl->data = xmallocr(128, sizeof(struct file_info));
-	fl->cap = 128;
+	fl->data = xmallocr(64, sizeof(struct file_info));
+	fl->cap = 64;
 	fl->len = 0;
 }
 
@@ -313,7 +313,7 @@ static void parse_ls_color(void)
 
 static enum file_kind color_type(mode_t mode)
 {
-#define S_IXUGO (S_IXUSR|S_IXGRP|S_IXOTH)
+	#define S_IXUGO (S_IXUSR|S_IXGRP|S_IXOTH)
 	switch (mode&S_IFMT) {
 	case S_IFREG:
 		if ((mode&S_ISUID) != 0)
@@ -371,8 +371,6 @@ static void fmt3(char b[3], uint16_t x)
 static void reltime(FILE *out, const time_t now, const time_t then)
 {
 	time_t diff = now - then;
-	char b[4] = "  0s";
-
 	if (diff < 0) {
 		fputs(C_SECOND "  0s" C_END, out);
 		return;
@@ -383,9 +381,10 @@ static void reltime(FILE *out, const time_t now, const time_t then)
 		return;
 	}
 
+	char b[4] = "  0s";
+
 	if (diff < MINUTE) {
 		fputs(C_SECOND, out);
-		b[3] = 's';
 	} else if (diff < HOUR) {
 		fputs(C_MINUTE, out);
 		diff /= MINUTE;
@@ -422,33 +421,32 @@ static void strmode_(FILE *out, const mode_t mode, const char **ts)
 {
 	#define tc(out, s) fputs(ts[(s)], (out))
 	switch (mode&S_IFMT) {
-	case S_IFREG: tc(out, i_none); break;
-	case S_IFDIR: tc(out, i_dir); break;
-	case S_IFCHR: tc(out, i_char); break;
-	case S_IFBLK: tc(out, i_block); break;
-	case S_IFIFO: tc(out, i_fifo); break;
-	case S_IFLNK: tc(out, i_link); break;
-	case S_IFSOCK: tc(out, i_sock); break;
-	default: tc(out, i_unknown); break;
+	case S_IFREG: tc(out, I_NONE); break;
+	case S_IFDIR: tc(out, I_DIR); break;
+	case S_IFCHR: tc(out, I_CHAR); break;
+	case S_IFBLK: tc(out, I_BLOCK); break;
+	case S_IFIFO: tc(out, I_FIFO); break;
+	case S_IFLNK: tc(out, I_LINK); break;
+	case S_IFSOCK: tc(out, I_SOCK); break;
+	default: tc(out, I_UNKNOWN); break;
 	}
-	tc(out, mode&S_IRUSR ? i_read : i_none);
-	tc(out, mode&S_IWUSR ? i_write : i_none);
+	tc(out, mode&S_IRUSR ? I_READ : I_NONE);
+	tc(out, mode&S_IWUSR ? I_WRITE : I_NONE);
 	tc(out, mode&S_ISUID
-		? mode&S_IXUSR ? i_uid_exec : i_uid
-		: mode&S_IXUSR ? i_exec : i_none);
-	tc(out, mode&S_IRGRP ? i_read : i_none);
-	tc(out, mode&S_IWGRP ? i_write : i_none);
+		? mode&S_IXUSR ? I_UID_EXEC : I_UID
+		: mode&S_IXUSR ? I_EXEC : I_NONE);
+	tc(out, mode&S_IRGRP ? I_READ : I_NONE);
+	tc(out, mode&S_IWGRP ? I_WRITE : I_NONE);
 	tc(out, mode&S_ISGID
-		? mode&S_IXGRP ? i_uid_exec : i_uid
-		: mode&S_IXGRP ? i_exec : i_none);
-	tc(out, mode&S_IROTH ? i_read : i_none);
-	tc(out, mode&S_IWOTH ? i_write : i_none);
+		? mode&S_IXGRP ? I_UID_EXEC : I_UID
+		: mode&S_IXGRP ? I_EXEC : I_NONE);
+	tc(out, mode&S_IROTH ? I_READ : I_NONE);
+	tc(out, mode&S_IWOTH ? I_WRITE : I_NONE);
 	tc(out, mode&S_ISVTX
-		? mode&S_IXOTH ? i_sticky : i_sticky_o
-		: mode&S_IXOTH ? i_exec : i_none);
+		? mode&S_IXOTH ? I_STICKY : I_STICKY_O
+		: mode&S_IXOTH ? I_EXEC : I_NONE);
 	#undef tc
 }
-
 
 //
 // Size printer
