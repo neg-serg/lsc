@@ -10,14 +10,12 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "xxhash/xxhash.h"
+#include <search.h>
 
 #define program_name "lsc"
 
 #include "slice.h"
 #include "filevercmp.h"
-#include "ht.h"
 #include "util.h"
 #include "config.h"
 
@@ -271,6 +269,7 @@ static int ls(struct file_list *l, char *name)
 // LS_COLORS parser
 //
 
+/*
 static unsigned keyhash(const ssht_key_t a)
 {
 	return XXH32(a.buf, a.len, 0);
@@ -278,13 +277,15 @@ static unsigned keyhash(const ssht_key_t a)
 
 static char *lsc_env;
 static ssht_t *ht;
+*/
+
+struct hsearch_data ht;
 
 static void parse_ls_color(void)
 {
-	lsc_env = getenv("LS_COLORS");
-	ht = ssht_alloc(keyhash, buf_eq);
-	if (!lsc_env)
-		return;
+	hcreate_r(1024, &ht);
+	char *lsc_env = getenv("LS_COLORS");
+	if (!lsc_env) return;
 	bool eq = false;
 	size_t kb = 0, ke = 0;
 	for (size_t i = 0; lsc_env[i] != '\0'; i++) {
@@ -297,13 +298,9 @@ static void parse_ls_color(void)
 		if (!eq || b != ':')
 			continue;
 		if (lsc_env[kb] == '*') {
-			ssht_key_t k;
-			ssht_value_t v;
-			lsc_env[ke] = '\0';
-			k = buf_new(lsc_env+kb+1, ke-kb-1);
-			lsc_env[i] = '\0';
-			v = lsc_env+ke+1;
-			ssht_set(ht, k, v);
+			lsc_env[i] = lsc_env[ke] = '\0';
+			ENTRY e = { .key = lsc_env+kb+1, .data = lsc_env+ke+1 }, *p;
+			hsearch_r(e, ENTER, &p, &ht);
 		}
 		kb = i + 1;
 		i += 2;
@@ -485,19 +482,14 @@ static void size(FILE *out, off_t sz, const char **sufs)
 // Name printer
 //
 
-static void *memrchr(const void *m, int c, size_t n)
-{
-	const unsigned char *s = m;
-	c = (unsigned char)c;
-	while (n--) if (s[n]==c) return (void *)(s+n);
-	return 0;
-}
-
 static const char *suf_color(buf name)
 {
 	char *n = memrchr(name.buf, '.', name.len);
-	if (n != NULL)
-		return ssht_get(ht, slice(name, n - name.buf, name.len));
+	if (n != NULL) {
+		ENTRY *p = NULL, e = { .key = n };
+		hsearch_r(e, FIND, &p, &ht);
+		return p ? p->data : NULL;
+	}
 	return NULL;
 }
 
