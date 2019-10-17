@@ -41,12 +41,13 @@ static struct {
 static uid_t myuid;
 static gid_t mygid;
 
-static bool uinfo_auto;
-
-static int uwidth;
-static int gwidth;
-
 struct ls_colors ls_colors;
+
+typedef struct ctx {
+	bool uinfo_auto;
+	int uwidth;
+	int gwidth;
+} ctx;
 
 // big :(
 typedef struct file_info {
@@ -109,7 +110,7 @@ static ssize_t ls_readlink(int dirfd, const char *name, size_t size, const char 
 }
 
 // populates file_info with file information
-static int ls_stat(int dirfd, const char *name, file_info *out) {
+static int ls_stat(ctx *c, int dirfd, const char *name, file_info *out) {
 	struct stat st;
 	if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) == -1)
 		return -1;
@@ -121,12 +122,12 @@ static int ls_stat(int dirfd, const char *name, file_info *out) {
 	out->size = st.st_size;
 	out->uid = st.st_uid;
 	out->gid = st.st_gid;
-	if (options.userinfo == UINFO_AUTO)
-		uinfo_auto |= st.st_uid != myuid || st.st_gid != mygid;
 	out->linkname = NULL;
 	out->linkname_len = 0;
 	out->linkmode = 0;
 	out->linkok = true;
+	if (options.userinfo == UINFO_AUTO)
+		c->uinfo_auto |= st.st_uid != myuid || st.st_gid != mygid;
 	if (S_ISLNK(out->mode)) {
 		ssize_t ln = ls_readlink(dirfd, name, st.st_size, &out->linkname);
 		if (ln == -1) { out->linkok = false; return 0; }
@@ -141,7 +142,7 @@ static int ls_stat(int dirfd, const char *name, file_info *out) {
 }
 
 // list directory
-static int ls_readdir(file_vec *v, const char *name) {
+static int ls_readdir(ctx *c, file_vec *v, const char *name) {
 	DIR *dir = opendir(name);
 	if (dir == NULL) {
 		warn_errno("cannot open directory %s", name);
@@ -161,7 +162,7 @@ static int ls_readdir(file_vec *v, const char *name) {
 		if (p[0] == '.' && p[1] == '.' && p[2] == '\0') continue;
 		struct file_info *out = fv_stage(v);
 		char *dup = strdup(p);
-		if (ls_stat(fd, dup, out) == -1) {
+		if (ls_stat(c, fd, dup, out) == -1) {
 			free(dup);
 			err = -1;
 			warn_errno("cannot access %s/%s", name, p);
@@ -175,17 +176,17 @@ static int ls_readdir(file_vec *v, const char *name) {
 }
 
 // list file/directory
-static int ls(file_vec *v, const char *name) {
+static int ls(ctx *c, file_vec *v, const char *name) {
 	file_info *fi = fv_stage(v); // new uninitialized file_info
 	char *s = strdup(name); // strdup to make fi_free work
-	if (ls_stat(AT_FDCWD, s, fi) == -1) {
+	if (ls_stat(c, AT_FDCWD, s, fi) == -1) {
 		free(s);
 		warn_errno("cannot access %s", name);
 		return -1;
 	}
 	if (S_ISDIR(fi->mode)) {
 		free(s);
-		return ls_readdir(v, name);
+		return ls_readdir(c, v, name);
 	}
 	fv_commit(v);
 	return 0;
@@ -416,8 +417,8 @@ static void fmt_name(FILE *out, const struct file_info *f) {
 	}
 }
 
-static void fmt_user(FILE *out, uid_t uid, gid_t gid) {
-	bool uinfo = (options.userinfo == UINFO_AUTO && uinfo_auto) ||
+static void fmt_user(ctx *c, FILE *out, uid_t uid, gid_t gid) {
+	bool uinfo = (options.userinfo == UINFO_AUTO && c->uinfo_auto) ||
 		options.userinfo == UINFO_ALWAYS;
 	if (!uinfo) return;
 	const char *u = getuser(uid);
@@ -426,18 +427,18 @@ static void fmt_user(FILE *out, uid_t uid, gid_t gid) {
 	fputs(C_USERINFO, out);
 	fputs(u, out);
 	int uw = strlen(u);
-	for (int n = uwidth - uw; n; n--)
+	for (int n = c->uwidth - uw; n; n--)
 		putc(' ', out);
 	putc(' ', out);
 	fputs(g, out);
 	int gw = strlen(g);
-	for (int n = gwidth - gw; n; n--)
+	for (int n = c->gwidth - gw; n; n--)
 		putc(' ', out);
 }
 
-static void fmt_file(FILE *out, time_t now, struct file_info *f) {
+static void fmt_file(ctx *c, FILE *out, time_t now, struct file_info *f) {
 	fmt_strmode(out, f->mode);
-	fmt_user(out, f->uid, f->gid);
+	fmt_user(c, out, f->uid, f->gid);
 	if (options.longdate)
 		fmt_longtime(out, now, f->time);
 	else
@@ -494,20 +495,21 @@ int main(int argc, char **argv) {
 	setvbuf(out, buf, _IOFBF, BUFSIZ);
 	int err = EXIT_SUCCESS;
 	while (optind < argc) {
+		ctx c = {0};
 		if (ls(&v, argv[optind++]) == -1)
 			err = EXIT_FAILURE;
 		fv_sort(&v, fi_cmp);
-		if (options.userinfo == UINFO_ALWAYS || uinfo_auto)
+		if (options.userinfo == UINFO_ALWAYS || c.uinfo_auto)
 			for (size_t i = 0; i < v.len; i++) {
 				struct file_info *fi = fv_index(&v, i);
 				int uw = strlen(getuser(fi->uid));
 				int gw = strlen(getgroup(fi->gid));
-				if (uw > uwidth) uwidth = uw;
-				if (gw > gwidth) gwidth = gw;
+				if (uw > c.uwidth) c.uwidth = uw;
+				if (gw > c.gwidth) c.gwidth = gw;
 			}
 		for (size_t i = 0; i < v.len; i++) {
 			struct file_info *fi = fv_index(&v, i);
-			fmt_file(out, now, fi);
+			fmt_file(&c, out, now, fi);
 			fi_free(fi);
 		}
 		fv_clear(&v);
