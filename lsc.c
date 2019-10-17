@@ -494,11 +494,17 @@ int main(int argc, char **argv) {
 	char buf[BUFSIZ];
 	setvbuf(out, buf, _IOFBF, BUFSIZ);
 	int err = EXIT_SUCCESS;
+	int args = argc - optind;
 	while (optind < argc) {
 		ctx c = {0};
-		if (ls(&v, argv[optind++]) == -1)
+		char *path = argv[optind++];
+		if (ls(&c, &v, path) == -1)
 			err = EXIT_FAILURE;
 		fv_sort(&v, fi_cmp);
+		if (args > 1) {
+			fputs(path, out);
+			fputs(":\n", out);
+		}
 		if (options.userinfo == UINFO_ALWAYS || c.uinfo_auto)
 			for (size_t i = 0; i < v.len; i++) {
 				struct file_info *fi = fv_index(&v, i);
