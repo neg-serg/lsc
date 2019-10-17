@@ -121,13 +121,8 @@ static int ls_stat(int dirfd, const char *name, file_info *out) {
 	out->size = st.st_size;
 	out->uid = st.st_uid;
 	out->gid = st.st_gid;
-	if (options.userinfo != UINFO_NEVER) {
+	if (options.userinfo == UINFO_AUTO)
 		uinfo_auto |= st.st_uid != myuid || st.st_gid != mygid;
-		const char *u = getuser(st.st_uid);
-		const char *g = getgroup(st.st_gid);
-		if (u) { int uw = strlen(u); if (uw > uwidth) uwidth = uw; }
-		if (g) { int gw = strlen(g); if (gw > gwidth) gwidth = gw; }
-	}
 	out->linkname = NULL;
 	out->linkname_len = 0;
 	out->linkmode = 0;
@@ -443,12 +438,12 @@ static void fmt_user(FILE *out, uid_t uid, gid_t gid) {
 static void fmt_file(FILE *out, time_t now, struct file_info *f) {
 	fmt_strmode(out, f->mode);
 	fmt_user(out, f->uid, f->gid);
-	putc(' ', out);
-	fmt_size(out, f->size);
 	if (options.longdate)
 		fmt_longtime(out, now, f->time);
 	else
 		fmt_reltime(out, now, f->time);
+	putc(' ', out);
+	fmt_size(out, f->size);
 	putc(' ', out);
 	fmt_name(out, f);
 	putc('\n', out);
@@ -488,20 +483,28 @@ int main(int argc, char **argv) {
 		default: exit(EXIT_FAILURE); break;
 		}
 	}
-	char cd[] = ".";
-	if (optind >= argc) argv[--optind] = cd;
-	myuid = getuid();
-	mygid = getgid();
+	if (optind >= argc) argv[--optind] = ".";
+	myuid = getuid(), mygid = getgid();
 	lsc_parse(&ls_colors, getenv("LS_COLORS"));
 	file_vec v;
 	fv_init(&v, 64);
 	time_t now = current_time();
 	FILE *out = stdout;
+	char buf[BUFSIZ];
+	setvbuf(out, buf, _IOFBF, BUFSIZ);
 	int err = EXIT_SUCCESS;
 	while (optind < argc) {
 		if (ls(&v, argv[optind++]) == -1)
 			err = EXIT_FAILURE;
 		fv_sort(&v, fi_cmp);
+		if (options.userinfo == UINFO_ALWAYS || uinfo_auto)
+			for (size_t i = 0; i < v.len; i++) {
+				struct file_info *fi = fv_index(&v, i);
+				int uw = strlen(getuser(fi->uid));
+				int gw = strlen(getgroup(fi->gid));
+				if (uw > uwidth) uwidth = uw;
+				if (gw > gwidth) gwidth = gw;
+			}
 		for (size_t i = 0; i < v.len; i++) {
 			struct file_info *fi = fv_index(&v, i);
 			fmt_file(out, now, fi);

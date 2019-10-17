@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "util.h"
+#include "id.h"
 
 struct uid { uid_t uid; struct uid *next; char name[]; };
 struct gid { gid_t gid; struct gid *next; char name[]; };
