@@ -9,9 +9,17 @@
 
 #define assertx(expr) (expr?(void)0:abort())
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 bool size_mul_overflow(size_t a, size_t b, size_t *result);
 
 void *xmalloc(size_t size);
 void *xrealloc(void *p, size_t size);
 void *xmallocr(size_t nmemb, size_t size);
 void *xreallocr(void *p, size_t nmemb, size_t size);
+
+#ifdef __cplusplus
+}
+#endif

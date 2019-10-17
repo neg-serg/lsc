@@ -1,30 +1,20 @@
 -include config.mk
 
 bin = lsc
-src = filevercmp.c lsc.c util.c
+src = filevercmp.c util.c lsc.c id.c ls_colors.c
 obj = $(src:.c=.o)
-
-prefix = /usr
-bindir = $(prefix)/bin
+dep = $(src:.c=.d)
 
 CFLAGS ?= -O2 -Wall -Wextra -pedantic
-CFLAGS += -std=c99
-CPPFLAGS += -D_DEFAULT_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+CFLAGS += -std=c11
+CPPFLAGS += -MMD -MP -D_DEFAULT_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 
 all: $(bin)
 
 $(bin): $(obj)
-	$(CC) -o $@ $(obj) $(LDFLAGS)
 
-%.o: %.c
-	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
+clean: ; rm -f $(bin) $(obj) $(dep)
 
-clean:
-	rm -f $(bin) $(obj)
+-include $(dep)
 
-install: $(addprefix $(DESTDIR)$(bindir)/,$(bin))
-
-$(DESTDIR)$(bindir)/%: %
-	install -Dm755 $< $@
-
-.PHONY: all clean install
+.PHONY: all clean

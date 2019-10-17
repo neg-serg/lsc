@@ -1,4 +1,4 @@
 *.o
+*.d
 config.mk
-genht-svn
 lsc

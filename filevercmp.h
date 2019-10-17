@@ -1,9 +1,2 @@
-struct suf_indexed {
-	buf b;
-	size_t pos;
-};
-
-struct suf_indexed new_suf_indexed(const char *s);
-struct suf_indexed new_suf_indexed_len(const char *s, size_t len);
-
-int filevercmp(struct suf_indexed a, struct suf_indexed b);
+size_t suf_index(const char *s, size_t len);
+int filevercmp(const char *a, const char *b, size_t alen, size_t blen, size_t ai, size_t bi);

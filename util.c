@@ -20,17 +20,13 @@ void *xrealloc(void *p, size_t size) {
 void *xmallocr(size_t nmemb, size_t size) {
 	size_t total;
 	assertx(!size_mul_overflow(nmemb, size, &total));
-	void *p = malloc(total);
-	assertx(p != NULL);
-	return p;
+	return xmalloc(total);
 }
 
 void *xreallocr(void *p, size_t nmemb, size_t size) {
 	size_t total;
 	assertx(!size_mul_overflow(nmemb, size, &total));
-	p = realloc(p, total);
-	assertx(p != NULL);
-	return p;
+	return xrealloc(p, total);
 }
 
 #define MUL_NO_OVERFLOW ((size_t)1 << (sizeof(size_t) * 4))
