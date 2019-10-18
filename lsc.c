@@ -394,16 +394,18 @@ static void fmt_name(FILE *out, const struct file_info *f) {
 		c = file_color(f->name, f->name_len, t);
 	}
 	fputs(C_ESC, out);
-	fputs(c, out);
+	fputs(c ? c : "0", out);
 	fputs("m", out);
 	fwrite(f->name, 1, f->name_len, out);
-	fputs(C_END, out);
+	if (c)
+		fputs(C_END, out);
 	if (f->linkname) {
 		fputs(C_SYM_DELIM C_ESC, out);
-		fputs(c, out);
+		fputs(c ? c : "0", out);
 		fputs("m", out);
 		fwrite(f->linkname, 1, f->linkname_len, out);
-		fputs(C_END, out);
+		if (c)
+			fputs(C_END, out);
 	}
 	if (options.classify) {
 		switch (t) {
