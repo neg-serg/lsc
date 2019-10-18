@@ -427,13 +427,15 @@ static void fmt_user(ctx *c, FILE *out, uid_t uid, gid_t gid) {
 	const char *g = getgroup(gid);
 	putc(' ', out);
 	fputs(C_USERINFO, out);
-	fputs(u, out);
-	int uw = strlen(u);
+	int uw = 6;
+	if (u) { fputs(u, out); uw = strlen(u); }
+	else uw = fprintf(out, "%d", uid);
 	for (int n = c->uwidth - uw; n; n--)
 		putc(' ', out);
 	putc(' ', out);
-	fputs(g, out);
-	int gw = strlen(g);
+	int gw = 6;
+	if (g) { fputs(g, out); gw = strlen(g); }
+	else gw = fprintf(out, "%d", gid);
 	for (int n = c->gwidth - gw; n; n--)
 		putc(' ', out);
 }
@@ -510,8 +512,10 @@ int main(int argc, char **argv) {
 		if (options.userinfo == UINFO_ALWAYS || c.uinfo_auto)
 			for (size_t i = 0; i < v.len; i++) {
 				struct file_info *fi = fv_index(&v, i);
-				int uw = strlen(getuser(fi->uid));
-				int gw = strlen(getgroup(fi->gid));
+				char *u = getuser(fi->uid);
+				char *g = getgroup(fi->gid);
+				int uw = u ? strlen(u) : snprintf(NULL, 0, "%d", fi->uid);
+				int gw = g ? strlen(g) : snprintf(NULL, 0, "%d", fi->gid);
 				if (uw > c.uwidth) c.uwidth = uw;
 				if (gw > c.gwidth) c.gwidth = gw;
 			}

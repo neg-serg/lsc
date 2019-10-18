@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <pwd.h>
+#include <grp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,8 +33,8 @@ const char *getgroup(gid_t gid) {
 	for (struct gid *p = gcache; p; p = p->next)
 		if (p->gid == gid)
 			return p->name[0] ? p->name : NULL;
-	struct passwd *pwd = getpwuid(gid);
-	char *name = pwd ? pwd->pw_name : "";
+	struct group *pwd = getgrgid(gid);
+	char *name = pwd ? pwd->gr_name : "";
 	struct gid *p = xmalloc(sizeof(*p) + strlen(name) + 1);
 	p->gid = gid;
 	strcpy(p->name, name);
