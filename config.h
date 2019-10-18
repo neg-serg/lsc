@@ -38,7 +38,7 @@ static const char *const C_SIZES[7] = {
 #define C_WRITE    C_ESC "31m" "w"
 #define C_EXEC     C_ESC "35m" "x"
 
-#define C_FT_NONE  C_ESC "90m" "."
+#define C_FILE     C_ESC "90m" "."
 #define C_DIR      C_ESC "32m" "d"
 #define C_CHAR     C_ESC "37m" "c"
 #define C_BLOCK    C_ESC "37m" "b"
@@ -58,3 +58,12 @@ static const char *const C_SIZES[7] = {
 #define CL_FIFO C_ESC "31m" "|"
 #define CL_SOCK C_ESC "35m" "="
 #define CL_EXEC C_END "*"
+
+// Git status
+#define C_GIT_NONE         "-"
+#define C_GIT_NEW          "N"
+#define C_GIT_MODIFIED     "M"
+#define C_GIT_DELETED      "D"
+#define C_GIT_RENAMED      "R"
+#define C_GIT_TYPE_CHANGE  "T"
+#define C_GIT_IGNORED      "I"

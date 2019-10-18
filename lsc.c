@@ -198,7 +198,7 @@ static int ls(ctx *c, file_vec *v, const char *name) {
 
 static void fmt_strmode(FILE *out, const mode_t mode) {
 	switch (mode&S_IFMT) {
-	case S_IFREG:  fputs(C_FT_NONE, out); break;
+	case S_IFREG:  fputs(C_FILE,    out); break;
 	case S_IFDIR:  fputs(C_DIR,     out); break;
 	case S_IFCHR:  fputs(C_CHAR,    out); break;
 	case S_IFBLK:  fputs(C_BLOCK,   out); break;
@@ -290,7 +290,6 @@ static void fmt_reltime(FILE *out, const time_t now, const time_t then) {
 	}
 	fmt3(b, diff);
 	fwrite(b, 1, 4, out);
-	fputs(C_END, out);
 }
 
 static off_t divide(off_t x, off_t d) { return (x+((d-1)/2))/d; }
@@ -495,8 +494,8 @@ int main(int argc, char **argv) {
 	fv_init(&v, 64);
 	time_t now = current_time();
 	FILE *out = stdout;
-	char buf[BUFSIZ];
-	setvbuf(out, buf, _IOFBF, BUFSIZ);
+	char buf[32*1024];
+	setvbuf(out, buf, _IOFBF, 32*1024);
 	int err = EXIT_SUCCESS;
 	int args = argc - optind;
 	while (optind < argc) {
@@ -512,10 +511,10 @@ int main(int argc, char **argv) {
 		if (options.userinfo == UINFO_ALWAYS || c.uinfo_auto)
 			for (size_t i = 0; i < v.len; i++) {
 				struct file_info *fi = fv_index(&v, i);
-				char *u = getuser(fi->uid);
-				char *g = getgroup(fi->gid);
-				int uw = u ? strlen(u) : snprintf(NULL, 0, "%d", fi->uid);
-				int gw = g ? strlen(g) : snprintf(NULL, 0, "%d", fi->gid);
+				const char *u = getuser(fi->uid);
+				const char *g = getgroup(fi->gid);
+				int uw = u ? (int)strlen(u) : snprintf(NULL, 0, "%d", fi->uid);
+				int gw = g ? (int)strlen(g) : snprintf(NULL, 0, "%d", fi->gid);
 				if (uw > c.uwidth) c.uwidth = uw;
 				if (gw > c.gwidth) c.gwidth = gw;
 			}

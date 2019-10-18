@@ -46,6 +46,7 @@ void lsc_parse(struct ls_colors *lsc, char *lsc_env) {
 		if (*k == '*') {
 			assertx(exti < exts);
 			lsc->ext_map[exti++] = (struct ext_pair) { k + 1, v };
+			//printf("%s=%s\n", k, v);
 		} else {
 			size_t len = kend - kbegin, i = 0;
 			assertx(len == 2);
@@ -55,6 +56,7 @@ void lsc_parse(struct ls_colors *lsc, char *lsc_env) {
 					break;
 			if (*p)
 				lsc->labels[i] = v;
+			//printf("l %s=%s\n", k, v);
 		}
 		kbegin = i + 1;
 		i += 2;
