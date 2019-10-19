@@ -26,12 +26,13 @@ const char *lsc_lookup(struct ls_colors *lsc, const char *ext) {
 
 void lsc_parse(struct ls_colors *lsc, char *lsc_env) {
 	size_t exts = 0, exti = 0;
-	for (char *p = lsc_env; *p; p++) if (*p == '*') exts++;
+	size_t len = strlen(lsc_env);
+	for (size_t i = 0; i < len; i++) if (lsc_env[i] == '*') exts++;
 	lsc->ext_map = xmallocr(exts, sizeof(struct ext_pair));
 	memset(lsc->labels, 0, sizeof(lsc->labels));
 	bool eq = false;
 	size_t kbegin = 0, kend = 0;
-	for (size_t i = 0; lsc_env[i] != '\0'; i++) {
+	for (size_t i = 0; i < len; i++) {
 		char c = lsc_env[i];
 		if (c == '=') {
 			kend = i;
@@ -46,17 +47,14 @@ void lsc_parse(struct ls_colors *lsc, char *lsc_env) {
 		if (*k == '*') {
 			assertx(exti < exts);
 			lsc->ext_map[exti++] = (struct ext_pair) { k + 1, v };
-			//printf("%s=%s\n", k, v);
-		} else {
-			size_t len = kend - kbegin, i = 0;
-			assertx(len == 2);
+		} else if (kend - kbegin == 2) {
+			size_t i = 0;
 			const char **p;
 			for (p = label_codes; *p; p++, i++)
 				if (k[0] == (*p)[0] && k[1] == (*p)[1])
 					break;
 			if (*p)
 				lsc->labels[i] = v;
-			//printf("l %s=%s\n", k, v);
 		}
 		kbegin = i + 1;
 		i += 2;
