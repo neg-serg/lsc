@@ -82,3 +82,20 @@ int filevercmp(const char *a, const char *b, size_t al, size_t bl, size_t ai, si
 	result = verrevcmp(a, b, ai, bi);
 	return result == 0 ? scmp : result;
 }
+
+#ifdef TEST
+#include <stdio.h>
+int main(void) {
+	char *s1 = 0, *s2 = 0;
+	size_t len1 = 0, len2 = 0;
+	for (;;) {
+		ssize_t n1 = getdelim(&s1, &len1, 0, stdin);
+		ssize_t n2 = getdelim(&s2, &len2, 0, stdin);
+		if (n1 == -1 || n2 == -1) break;
+		size_t suf1 = suffix(s1, len1);
+		size_t suf2 = suffix(s2, len2);
+		int z = filevercmp(s1, s2, len1, len2, suf1, suf2);
+		printf("%d\n", z);
+	}
+}
+#endif

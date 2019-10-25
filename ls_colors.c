@@ -63,3 +63,26 @@ void lsc_parse(struct ls_colors *lsc, char *lsc_env) {
 	lsc->exts = exti;
 	qsort(lsc->ext_map, lsc->exts, sizeof(*lsc->ext_map), ext_pair_cmp);
 }
+
+#ifdef TEST
+#include <stdio.h>
+#include <unistd.h>
+int main(void) {
+#define cap 64*1024
+	char a[cap];
+	size_t len = 0;
+	for (;;) {
+		ssize_t n = read(0, a+len, cap-len-1);
+		if (cap-len-1 == 0) return 1;
+		if (n == 0) break;
+		if (n == -1) {
+			perror("ls_colors");
+			return 1;
+		}
+		len += n;
+	}
+	a[++len] = 0;
+	struct ls_colors lsc = {0};
+	lsc_parse(&lsc, a);
+}
+#endif
