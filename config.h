@@ -39,11 +39,11 @@ static const char *const C_SIZES[7] = {
 #define C_EXEC     C_ESC "35m" "x"
 
 #define C_FILE     C_ESC "90m" "."
-#define C_DIR      C_ESC "32m" "d"
-#define C_CHAR     C_ESC "37m" "c"
-#define C_BLOCK    C_ESC "37m" "b"
-#define C_FIFO     C_ESC "37m" "p"
-#define C_LINK     C_ESC "33m" "l"
+#define C_DIR      C_ESC "92m" "d"
+#define C_CHAR     C_ESC "97m" "c"
+#define C_BLOCK    C_ESC "97m" "b"
+#define C_FIFO     C_ESC "97m" "p"
+#define C_LINK     C_ESC "93m" "l"
 
 #define C_SOCK     C_ESC "38;5;161m" "s"
 #define C_UID      C_ESC "38;5;220m" "S"
