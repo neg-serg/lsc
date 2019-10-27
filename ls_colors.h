@@ -17,5 +17,5 @@ struct ls_colors {
 	size_t exts;
 };
 
-const char *lsc_lookup(struct ls_colors *lsc, const char *ext);
-void lsc_parse(struct ls_colors *lsc, char *lsc_env);
+const char *ls_colors_lookup(struct ls_colors *lsc, const char *ext);
+void ls_colors_parse(struct ls_colors *lsc, char *lsc_env);

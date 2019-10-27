@@ -41,7 +41,7 @@ static struct {
 static uid_t myuid;
 static gid_t mygid;
 
-struct ls_colors ls_colors;
+static struct ls_colors ls_colors;
 
 typedef struct ctx {
 	bool uinfo_auto;
@@ -96,17 +96,16 @@ static int fi_cmp(const void *va, const void *vb) {
 VEC(fv, file_vec, file_info)
 
 // read symlink target
-static ssize_t ls_readlink(int dirfd, const char *name, size_t size, const char **linkname) {
+static const char *ls_readlink(int dirfd, const char *name, size_t size) {
 	char *buf = xmalloc(size + 1); // allocate length + \0
 	ssize_t n = readlinkat(dirfd, name, buf, size);
 	if (n == -1) {
 		free(buf);
-		return -1;
+		return NULL;
 	}
-	assertx((size_t)n <= size); // possible truncation
+	assertx((size_t)n == size); // possible truncation
 	buf[n] = '\0';
-	*linkname = (const char *)buf;
-	return n;
+	return buf;
 }
 
 // populates file_info with file information
@@ -129,9 +128,10 @@ static int ls_stat(ctx *c, int dirfd, const char *name, file_info *out) {
 	if (options.userinfo == UINFO_AUTO)
 		c->uinfo_auto |= st.st_uid != myuid || st.st_gid != mygid;
 	if (S_ISLNK(out->mode)) {
-		ssize_t ln = ls_readlink(dirfd, name, st.st_size, &out->linkname);
-		if (ln == -1) { out->linkok = false; return 0; }
-		out->linkname_len = (size_t)ln;
+		const char *ln = ls_readlink(dirfd, name, st.st_size);
+		if (ln == NULL) { out->linkok = false; return 0; }
+		out->linkname = ln;
+		out->linkname_len = (size_t)st.st_size;
 		if (fstatat(dirfd, name, &st, 0) == -1) {
 			out->linkok = false;
 			return 0;
@@ -241,7 +241,7 @@ static void fmt_longtime(FILE *out, const time_t now, const time_t then) {
 	char buf[20];
 	struct tm tm;
 	localtime_r(&then, &tm);
-	strftime(buf, sizeof(buf), 
+	strftime(buf, sizeof(buf),
 		diff < MONTH * 6 ? "%e %b %H:%M" : "%e %b  %Y", &tm);
 	putc(' ', out);
 	fputs(C_DAY, out);
@@ -317,7 +317,7 @@ static void fmt_size(FILE *out, off_t sz) {
 	fputs(C_SIZES[m], out);
 }
 
-static enum labels color_type(mode_t mode) {
+static int color_type(mode_t mode) {
 	#define S_IXUGO (S_IXUSR|S_IXGRP|S_IXOTH)
 	switch (mode&S_IFMT) {
 	case S_IFREG:
@@ -346,7 +346,7 @@ static enum labels color_type(mode_t mode) {
 	}
 }
 
-static const char *immediate_files[] = {
+static const char *const immediate_files[] = {
 	"Makefile", "Cargo.toml", "SConstruct", "CMakeLists.txt",
 	"build.gradle", "Rakefile", "Gruntfile.js",
 	"Gruntfile.coffee", "BUILD", "BUILD.bazel", "WORKSPACE", "build.xml",
@@ -360,7 +360,7 @@ static bool is_readme(const char *s) {
 }
 
 static bool is_immediate(const char *name) {
-	for (const char **p = immediate_files; *p; p++)
+	for (const char *const *p = immediate_files; *p; p++)
 		if (strcasecmp(name, *p) == 0) return true;
 	return is_readme(name);
 }
@@ -368,10 +368,10 @@ static bool is_immediate(const char *name) {
 static const char *suf_color(const char *name, size_t len) {
 	char *n = memrchr(name, '.', len);
 	if (n == NULL) return NULL;
-	return lsc_lookup(&ls_colors, n);
+	return ls_colors_lookup(&ls_colors, n);
 }
 
-static const char *file_color(const char *name, size_t len, enum labels t) {
+static const char *file_color(const char *name, size_t len, int t) {
 	if (t == L_FILE || t == L_LINK) {
 		if (is_immediate(name))
 			return ls_colors.labels[L_DOOR];
@@ -382,7 +382,7 @@ static const char *file_color(const char *name, size_t len, enum labels t) {
 }
 
 static void fmt_name(FILE *out, const struct file_info *f) {
-	enum labels t;
+	int t;
 	const char *c;
 	if (f->linkname) {
 		if (f->linkok) t = color_type(f->linkmode);
@@ -489,7 +489,7 @@ int main(int argc, char **argv) {
 	}
 	if (optind >= argc) argv[--optind] = ".";
 	myuid = getuid(), mygid = getgid();
-	lsc_parse(&ls_colors, getenv("LS_COLORS"));
+	ls_colors_parse(&ls_colors, getenv("LS_COLORS"));
 	file_vec v;
 	fv_init(&v, 64);
 	time_t now = current_time();
