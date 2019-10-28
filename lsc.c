@@ -361,8 +361,14 @@ static bool is_readme(const char *s) {
 
 static bool is_immediate(const char *name) {
 	for (const char *const *p = immediate_files; *p; p++)
-		if (strcasecmp(name, *p) == 0) return true;
+		if (strcmp(name, *p) == 0) return true;
 	return is_readme(name);
+}
+
+void *memrchr(const void *m, int c, size_t n) {
+	const unsigned char *s = m;
+	while (n--) if (s[n]==(unsigned char)c) return (void *)(s+n);
+	return 0;
 }
 
 static const char *suf_color(const char *name, size_t len) {

@@ -5,7 +5,8 @@ src = filevercmp.c util.c lsc.c id.c ls_colors.c
 obj = $(src:.c=.o)
 dep = $(src:.c=.d)
 
-CPPFLAGS += -MMD -MP -D_DEFAULT_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+CPPFLAGS += -MMD -MP -D_POSIX_C_SOURCE=1
+CFLAGS += -std=c99
 
 $(bin): $(obj)
 
