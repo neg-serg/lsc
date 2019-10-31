@@ -1,3 +1,5 @@
+#include <wchar.h>
+#include <locale.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -424,6 +426,18 @@ static void fmt_name(FILE *out, const struct file_info *f) {
 	}
 }
 
+int strwidth(const char *s) {
+	mbstate_t st = {0};
+	const char *e = s + strlen(s);
+	wchar_t wc;
+	int len, w = 0;
+	while ((len = mbrtowc(&wc, s, e-s, &st)) > 0) {
+		w += wcwidth(wc);
+		s += len;
+	}
+	return w;
+}
+
 static void fmt_user(ctx *c, FILE *out, uid_t uid, gid_t gid) {
 	bool uinfo = (options.userinfo == UINFO_AUTO && c->uinfo_auto) ||
 		options.userinfo == UINFO_ALWAYS;
@@ -433,13 +447,13 @@ static void fmt_user(ctx *c, FILE *out, uid_t uid, gid_t gid) {
 	putc(' ', out);
 	fputs(C_USERINFO, out);
 	int uw = 6;
-	if (u) { fputs(u, out); uw = strlen(u); }
+	if (u) { fputs(u, out); uw = strwidth(u); }
 	else uw = fprintf(out, "%d", uid);
 	for (int n = c->uwidth - uw; n; n--)
 		putc(' ', out);
 	putc(' ', out);
 	int gw = 6;
-	if (g) { fputs(g, out); gw = strlen(g); }
+	if (g) { fputs(g, out); gw = strwidth(g); }
 	else gw = fprintf(out, "%d", gid);
 	for (int n = c->gwidth - gw; n; n--)
 		putc(' ', out);
@@ -476,6 +490,7 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
+	setlocale(LC_ALL, "");
 	int c;
 	while ((c = getopt(argc, argv, "aFcrgtShuUD")) != -1) {
 		switch (c) {
@@ -519,8 +534,8 @@ int main(int argc, char **argv) {
 				struct file_info *fi = fv_index(&v, i);
 				const char *u = getuser(fi->uid);
 				const char *g = getgroup(fi->gid);
-				int uw = u ? (int)strlen(u) : snprintf(NULL, 0, "%d", fi->uid);
-				int gw = g ? (int)strlen(g) : snprintf(NULL, 0, "%d", fi->gid);
+				int uw = u ? strwidth(u) : snprintf(NULL, 0, "%d", fi->uid);
+				int gw = g ? strwidth(g) : snprintf(NULL, 0, "%d", fi->gid);
 				if (uw > c.uwidth) c.uwidth = uw;
 				if (gw > c.gwidth) c.gwidth = gw;
 			}
