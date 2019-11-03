@@ -1,11 +1,9 @@
 #define C_ESC "\033["    // Start escape sequence
 #define C_END C_ESC "0m" // End escape sequence
 
-// Column delimiter
-#define COL " "
-
 // Symlink -> symlink target
-#define C_SYM_DELIM " " C_ESC "90m" "-> "
+#define C_SYM_DELIM "-> "
+#define C_SYM_DELIM_COLOR C_ESC "90m"
 
 // User/group info
 #define C_USERINFO C_ESC "90m"
@@ -20,16 +18,6 @@
 
 // Number part of size
 #define C_SIZE C_ESC "90m"
-
-static const char *const C_SIZES[7] = {
-	"B", // Byte
-	"K", // Kibibyte
-	"M", // Mebibyte
-	"G", // Gibibyte
-	"T", // Tebibyte
-	"P", // Pebibyte
-	"E", // Exbibyte
-};
 
 // File mode string
 #define C_NONE     C_ESC "90m" "-"
@@ -58,12 +46,3 @@ static const char *const C_SIZES[7] = {
 #define CL_FIFO C_ESC "31m" "|"
 #define CL_SOCK C_ESC "35m" "="
 #define CL_EXEC C_END "*"
-
-// Git status
-#define C_GIT_NONE         "-"
-#define C_GIT_NEW          "N"
-#define C_GIT_MODIFIED     "M"
-#define C_GIT_DELETED      "D"
-#define C_GIT_RENAMED      "R"
-#define C_GIT_TYPE_CHANGE  "T"
-#define C_GIT_IGNORED      "I"
