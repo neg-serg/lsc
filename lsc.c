@@ -90,9 +90,9 @@ typedef struct {
 	id_t uid, gid;
 	time_t time;
 	off_t size;
-	uint16_t name_len, linkname_len;
-	uint16_t uwidth, gwidth, nwidth;
-	uint16_t name_suf;
+	int name_len, linkname_len;
+	int uwidth, gwidth, nwidth;
+	int name_suf;
 	bool linkok;
 } file_info;
 
@@ -469,7 +469,7 @@ static void fmt_abstime(FILE *out, const time_t then) {
 	putc(' ', out);
 }
 
-static void fmt3(char b[static 3], uint16_t x) {
+static void fmt3(char b[static 3], int x) {
 	if (x/100) b[0] = '0' + x/100;
 	if (x/100||x/10%10) b[1] = '0' + x/10%10;
 	b[2] = '0' + x%10;
@@ -518,6 +518,7 @@ static const char *const C_SIZES[7] = { "B", "K", "M", "G", "T", "P", "E" };
 
 static off_t divide(off_t x, off_t d) { return (x+(d-1)/2)/d; }
 
+// TODO: make this reusable
 static void fmt_size(FILE *out, off_t sz) {
 	fputs(C_SIZE, out);
 	int m = 0;
@@ -686,7 +687,7 @@ static void fmt_file(FILE *out, file_list *l, file_info *fi) {
 struct grid { int *columns, x, y; };
 
 bool grid_layout(struct grid *g, int direction, int padding, int term_width,
-	int max_width, int *widths, int widths_len)
+	int max_width, int *widths, size_t widths_len)
 {
 	g->columns = 0;
 	int *cols = 0;
@@ -703,7 +704,7 @@ bool grid_layout(struct grid *g, int direction, int padding, int term_width,
 		// find maximum width in each column
 		cols = xrealloc(cols, c, sizeof(*cols));
 		memset(cols, 0, c * sizeof(*cols));
-		for (int i = 0; i < widths_len; i++) {
+		for (size_t i = 0; i < widths_len; i++) {
 			int ci = direction ? i % c : i / r;
 			cols[ci] = MAX(cols[ci], widths[i]);
 		}
@@ -757,7 +758,7 @@ static void fmt_file_list(FILE *out, file_list *v) {
 	for (int y = 0; y < g.y; y++) {
 		for (int x = 0; x < g.x; x++) {
 			int i = direction ? y * g.x + x : g.y * x + y;
-			if (i >= (int)v->len) continue;
+			if ((size_t)i >= v->len) continue;
 			file_info *fi = fv_index(v, i);
 			fmt_file(out, v, fi);
 			int p = g.columns[x] - widths[i] + padding;
