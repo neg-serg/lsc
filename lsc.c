@@ -1,5 +1,10 @@
-// TODO: refactor width stuff, fix potential verrevcmp overflow, reconsider
-// naming, general refactoring, code organization
+/* TODO
+ * refactor width stuff
+ * fix potential verrevcmp overflow
+ * naming, code organization
+ * redesign cli
+ * config file
+ */
 
 #include <dirent.h>
 #include <errno.h>
@@ -63,9 +68,10 @@ enum layout_type { LAYOUT_GRID_COLUMNS, LAYOUT_GRID_LINES, LAYOUT_1LINE };
 static struct {
 	bool all;
 	bool dir;
-	bool c_time;
+	bool m_time;
+	bool total;
 	// sorting
-	bool group_dir;
+	bool no_group_dir;
 	bool reverse;
 	enum sort_type sort;
 	// data/formatting
@@ -75,7 +81,7 @@ static struct {
 	enum uinfo_type userinfo;
 	enum date_type date;
 	bool size;
-	bool classify;
+	bool no_classify;
 } options;
 
 typedef struct {
@@ -171,7 +177,7 @@ static inline int fi_cmp(const void *va, const void *vb) {
 	file_info *a = (file_info *const)va;
 	file_info *b = (file_info *const)vb;
 	int rev = options.reverse ? -1 : 1;
-	if (options.group_dir)
+	if (!options.no_group_dir)
 		if (fi_isdir(a) != fi_isdir(b))
 			return fi_isdir(a) ? -1 : 1;
 	if (options.sort == SORT_SIZE) {
@@ -243,7 +249,7 @@ static int ls_stat(file_list *l, file_info *fi, int dirfd, char *name) {
 	if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) == -1)
 		return -1;
 	fi->mode = st.st_mode;
-	fi->time = options.c_time ? st.st_ctime : st.st_mtime;
+	fi->time = options.m_time ? st.st_mtime : st.st_ctime;
 	fi->size = st.st_size;
 	fi->uid = st.st_uid;
 	fi->gid = st.st_gid;
@@ -592,14 +598,14 @@ static int strwidth(const char *s) {
 
 static int fmt_name_width(const file_info *fi) {
 	int w = strwidth(fi->name);
-	mode_t m = fi->mode;
 	if (options.follow_links && fi->linkname) {
 		w += 1 + strlen(C_SYM_DELIM) + strwidth(fi->linkname);
-		m = fi->linkmode;
 	}
-	if (options.classify)
-		w += (S_ISREG(m) && m&S_IXUGO) ||
-			m&S_IFMT&(S_IFLNK|S_IFDIR|S_IFIFO|S_IFSOCK);
+	if (!options.no_classify) {
+		mode_t m = fi->linkname && options.follow_links ? fi->linkmode : fi->mode;
+		w += (S_ISREG(m) && m&S_IXUGO) || S_ISDIR(m) || S_ISLNK(m) ||
+			S_ISFIFO(m) || S_ISSOCK(m);
+	}
 	return w;
 }
 
@@ -625,7 +631,7 @@ static void fmt_name(FILE *out, const file_info *fi) {
 		fwrite(fi->linkname, 1, fi->linkname_len, out);
 		if (c) fputs(C_END, out);
 	}
-	if (options.classify) {
+	if (!options.no_classify) {
 		mode_t m = fi->linkname && options.follow_links ? fi->linkmode : fi->mode;
 		if (S_ISREG(m) && m&S_IXUGO) fputs(CL_EXEC, out);
 		else if S_ISDIR(m) fputs(CL_DIR, out);
@@ -774,37 +780,38 @@ oneline:
 
 void usage(void) {
 	log("Usage: %s [option ...] [file ...]"
-		"\n  -a  show all files"
-		"\n  -c  use ctime instead of mtime"
-		"\n  -G  group directories first"
-		"\n  -r  reverse sort"
-		"\n  -S  sort by file size"
-		"\n  -t  sort by mtime/ctime"
-		"\n  -1  list one file per line"
-		"\n  -g  show output in grid, by columns (default)"
-		"\n  -x  show output in grid, by lines"
-		"\n  -m  print file modes"
-		"\n  -u  print user and group info (automatic)"
-		"\n  -U  print user and group info (always)"
-		"\n  -d  print relative modification time"
-		"\n  -D  print absolute modification time"
-		"\n  -z  print file size"
-		"\n  -y  print symlink target"
-		"\n  -F  print type indicator"
-		"\n  -?  show this help"
+		"\nTODO"
+		/* "\n  -a  show all files" */
+		/* "\n  -c  use ctime instead of mtime" */
+		/* "\n  -G  group directories first" */
+		/* "\n  -r  reverse sort" */
+		/* "\n  -S  sort by file size" */
+		/* "\n  -t  sort by mtime/ctime" */
+		/* "\n  -1  list one file per line" */
+		/* "\n  -g  show output in grid, by columns (default)" */
+		/* "\n  -x  show output in grid, by lines" */
+		/* "\n  -m  print file modes" */
+		/* "\n  -u  print user and group info (automatic)" */
+		/* "\n  -U  print user and group info (always)" */
+		/* "\n  -d  print relative modification time" */
+		/* "\n  -D  print absolute modification time" */
+		/* "\n  -z  print file size" */
+		/* "\n  -y  print symlink target" */
+		/* "\n  -F  print type indicator" */
+		/* "\n  -?  show this help" */
 		, program_name);
 }
 
 int main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
 	int c;
-	while ((c = getopt(argc, argv, "aicGrSt1gxmdDuUzFy?")) != -1)
+	while ((c = getopt(argc, argv, "aIMGrst1gxmdDuUzFyl?")) != -1)
 		switch (c) {
 		case 'a': options.all = true; break;
-		case 'i': options.dir = true; break;
-		case 'c': options.c_time = true; break;
-		case 'G': options.group_dir = true; break;
-		case 'S': options.sort = SORT_SIZE; break;
+		case 'I': options.dir = true; break;
+		case 'M': options.m_time = true; break;
+		case 'G': options.no_group_dir = true; break;
+		case 's': options.sort = SORT_SIZE; break;
 		case 't': options.sort = SORT_TIME; break;
 		case 'r': options.reverse = true; break;
 		case '1': options.layout = LAYOUT_1LINE; break;
@@ -816,8 +823,16 @@ int main(int argc, char **argv) {
 		case 'u': options.userinfo = UINFO_AUTO; break;
 		case 'U': options.userinfo = UINFO_ALWAYS; break;
 		case 'z': options.size = true; break;
-		case 'F': options.classify = true; break;
+		case 'F': options.no_classify = true; break;
 		case 'y': options.follow_links = true; break;
+		case 'l':
+			options.layout = LAYOUT_1LINE;
+			options.date = DATE_REL;
+			options.strmode = true;
+			options.userinfo = UINFO_AUTO;
+			options.follow_links = true;
+			options.size = true;
+			break;
 		case '?': usage(); exit(EXIT_SUCCESS); break;
 		default: exit(EXIT_FAILURE); break;
 		}
