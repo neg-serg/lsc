@@ -780,7 +780,7 @@ oneline:
 
 void usage(void) {
 	log("Usage: %s [option ...] [file ...]"
-		"\nTODO"
+		/* TODO */
 		/* "\n  -a  show all files" */
 		/* "\n  -c  use ctime instead of mtime" */
 		/* "\n  -G  group directories first" */
@@ -833,8 +833,11 @@ int main(int argc, char **argv) {
 			options.follow_links = true;
 			options.size = true;
 			break;
-		case '?': usage(); exit(EXIT_SUCCESS); break;
-		default: exit(EXIT_FAILURE); break;
+		case '?': usage(); return 0;
+		default:
+			warn("invalid option -- '%c'", c);
+			log("try '%s -?' for more information", program_name);
+			return 2;
 		}
 	lsc_parse(getenv("LS_COLORS"));
 	get_current_time();
