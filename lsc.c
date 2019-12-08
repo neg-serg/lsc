@@ -805,7 +805,7 @@ void usage(void) {
 int main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
 	int c;
-	while ((c = getopt(argc, argv, "aIMGrst1gxmdDuUzFyl?")) != -1)
+	while ((c = getopt(argc, argv, "aIMGrst1gxmdDuUzFylh")) != -1)
 		switch (c) {
 		case 'a': options.all = true; break;
 		case 'I': options.dir = true; break;
@@ -833,7 +833,7 @@ int main(int argc, char **argv) {
 			options.follow_links = true;
 			options.size = true;
 			break;
-		case '?': usage(); return 0;
+		case 'h': usage(); return 0;
 		default:
 			warn("invalid option -- '%c'", c);
 			log("try '%s -?' for more information", program_name);
