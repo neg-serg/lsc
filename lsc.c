@@ -69,7 +69,7 @@ static struct {
 	bool all;
 	bool dir;
 	bool m_time;
-	bool total;
+	bool stats;
 	// sorting
 	bool no_group_dir;
 	bool reverse;
@@ -769,7 +769,7 @@ static void fmt_file_list(FILE *out, file_list *v) {
 	}
 	free(g.columns);
 	free(widths);
-	return;
+	goto end;
 oneline:
 	for (size_t i = 0; i < v->len; i++) {
 		file_info *fi = fv_index(v, i);
@@ -777,39 +777,45 @@ oneline:
 		fi_free(fi);
 		putc('\n', out);
 	}
+end:
+	if (options.stats)
+		fprintf(out, "%zu\n", v->len);
 }
 
 void usage(void) {
-	log("Usage: %s [option ...] [file ...]"
-		/* TODO */
-		/* "\n  -a  show all files" */
-		/* "\n  -c  use ctime instead of mtime" */
-		/* "\n  -G  group directories first" */
-		/* "\n  -r  reverse sort" */
-		/* "\n  -S  sort by file size" */
-		/* "\n  -t  sort by mtime/ctime" */
-		/* "\n  -1  list one file per line" */
-		/* "\n  -g  show output in grid, by columns (default)" */
-		/* "\n  -x  show output in grid, by lines" */
-		/* "\n  -m  print file modes" */
-		/* "\n  -u  print user and group info (automatic)" */
-		/* "\n  -U  print user and group info (always)" */
-		/* "\n  -d  print relative modification time" */
-		/* "\n  -D  print absolute modification time" */
-		/* "\n  -z  print file size" */
-		/* "\n  -y  print symlink target" */
-		/* "\n  -F  print type indicator" */
-		/* "\n  -?  show this help" */
+	log("usage: %s [option ...] [file ...]"
+		"\n  -a  show all files"
+		"\n  -I  do not open directories"
+		"\n  -c  print stats"
+		"\n  -M  use mtime instead of ctime"
+		"\n  -G  do not group directories first"
+		"\n  -r  reverse sort"
+		"\n  -s  sort by file size"
+		"\n  -t  sort by mtime/ctime"
+		"\n  -1  list one file per line"
+		"\n  -g  show output in grid, by columns (default)"
+		"\n  -x  show output in grid, by lines"
+		"\n  -m  print file modes"
+		"\n  -u  print user and group info (automatic)"
+		"\n  -U  print user and group info (always)"
+		"\n  -d  print relative modification time"
+		"\n  -D  print absolute modification time"
+		"\n  -z  print file size"
+		"\n  -y  print symlink target"
+		"\n  -F  do not print type indicator"
+		"\n  -l  long format (equivalent to -1mudzy)"
+		"\n  -?  show this help"
 		, program_name);
 }
 
 int main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
 	int c;
-	while ((c = getopt(argc, argv, "aIMGrst1gxmdDuUzFylh")) != -1)
+	while ((c = getopt(argc, argv, ":aIcMGrst1gxmdDuUzFylh")) != -1)
 		switch (c) {
 		case 'a': options.all = true; break;
 		case 'I': options.dir = true; break;
+		case 'c': options.stats = true; break;
 		case 'M': options.m_time = true; break;
 		case 'G': options.no_group_dir = true; break;
 		case 's': options.sort = SORT_SIZE; break;
@@ -819,10 +825,10 @@ int main(int argc, char **argv) {
 		case 'g': options.layout = LAYOUT_GRID_COLUMNS; break;
 		case 'x': options.layout = LAYOUT_GRID_LINES; break;
 		case 'm': options.strmode = true; break;
-		case 'd': options.date = DATE_REL; break;
-		case 'D': options.date = DATE_ABS; break;
 		case 'u': options.userinfo = UINFO_AUTO; break;
 		case 'U': options.userinfo = UINFO_ALWAYS; break;
+		case 'd': options.date = DATE_REL; break;
+		case 'D': options.date = DATE_ABS; break;
 		case 'z': options.size = true; break;
 		case 'F': options.no_classify = true; break;
 		case 'y': options.follow_links = true; break;
@@ -835,10 +841,11 @@ int main(int argc, char **argv) {
 			options.size = true;
 			break;
 		case 'h': usage(); return 0;
-		default:
-			warn("invalid option -- '%c'", c);
-			log("try '%s -?' for more information", program_name);
+		case '?':
+			warn("invalid option -- '%c'", optopt);
+			log("try '%s -h' for more information", program_name);
 			return 2;
+		default: return -1;
 		}
 	lsc_parse(getenv("LS_COLORS"));
 	get_current_time();
