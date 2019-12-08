@@ -48,13 +48,13 @@ static inline size_t size_mul(size_t a, size_t b) {
 	return a * b;
 }
 
-static inline void *xmallocr(size_t nmemb, size_t size) {
+static inline void *xmalloc(size_t nmemb, size_t size) {
 	void *p = malloc(size_mul(nmemb, size));
 	assertx(p);
 	return p;
 }
 
-static inline void *xreallocr(void *p, size_t nmemb, size_t size) {
+static inline void *xrealloc(void *p, size_t nmemb, size_t size) {
 	p = realloc(p, size_mul(nmemb, size));
 	assertx(p);
 	return p;
@@ -208,7 +208,7 @@ static void fv_clear(file_list *v) {
 }
 
 static void fv_init(file_list *v, size_t init) {
-	v->data = xmallocr(init, sizeof(file_info));
+	v->data = xmalloc(init, sizeof(file_info));
 	v->cap = init;
 	fv_clear(v);
 }
@@ -218,7 +218,7 @@ static file_info *fv_index(file_list *v, size_t i) { return &v->data[i]; }
 static file_info *fv_stage(file_list *v) {
 	if (v->len >= v->cap) {
 		v->cap = size_mul(v->cap, 2);
-		v->data = xreallocr(v->data, v->cap, sizeof(file_info));
+		v->data = xrealloc(v->data, v->cap, sizeof(file_info));
 	}
 	return fv_index(v, v->len);
 }
@@ -227,7 +227,7 @@ static void fv_commit(file_list *v) { v->len++; }
 
 // read symlink target
 static const char *ls_readlink(int dirfd, const char *name, size_t size) {
-	char *buf = xmallocr(size + 1, 1); // allocate length + \0
+	char *buf = xmalloc(size + 1, 1); // allocate length + \0
 	ssize_t n = readlinkat(dirfd, name, buf, size);
 	if (n == -1) {
 		free(buf);
@@ -360,7 +360,7 @@ static void lsc_parse(char *lsc_env) {
 	size_t exts = 0, exti = 0;
 	size_t len = strlen(lsc_env);
 	for (size_t i = 0; i < len; i++) if (lsc_env[i] == '*') exts++;
-	ls_colors.map = xmallocr(exts, sizeof(*ls_colors.map));
+	ls_colors.map = xmalloc(exts, sizeof(*ls_colors.map));
 	bool eq = false;
 	size_t kbegin = 0, kend = 0;
 	for (size_t i = 0; i < len; i++) {
@@ -389,7 +389,7 @@ static void lsc_parse(char *lsc_env) {
 struct idcache { struct idcache *next; id_t id; char name[]; };
 
 static const char *id_put(struct idcache **cache, id_t id, const char *name) {
-	struct idcache *p = xmallocr(sizeof(*p) + strlen(name) + 1, 1);
+	struct idcache *p = xmalloc(sizeof(*p) + strlen(name) + 1, 1);
 	strcpy(p->name, name);
 	p->id = id;
 	p->next = *cache, *cache = p;
@@ -701,7 +701,7 @@ bool grid_layout(struct grid *g, int direction, int padding, int term_width,
 		// total padding between columns
 		int total_separator_width = (c - 1) * padding;
 		// find maximum width in each column
-		cols = xreallocr(cols, c, sizeof(*cols));
+		cols = xrealloc(cols, c, sizeof(*cols));
 		memset(cols, 0, c * sizeof(*cols));
 		for (int i = 0; i < widths_len; i++) {
 			int ci = direction ? i % c : i / r;
@@ -736,7 +736,7 @@ static void fmt_file_list(FILE *out, file_list *v) {
 		}
 	if (options.layout == LAYOUT_1LINE)
 		goto oneline;
-	int *widths = xmallocr(v->len, sizeof(int)), max_width = 0;
+	int *widths = xmalloc(v->len, sizeof(int)), max_width = 0;
 	for (size_t i = 0; i < v->len; i++) {
 		file_info *fi = fv_index(v, i);
 		fi->nwidth = fmt_name_width(fi);
