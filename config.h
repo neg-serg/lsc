@@ -40,13 +40,13 @@ static const char *c_modes[15] = {
 	C_ESC "0m"         "c",         // i_char
 	C_ESC "0m"         "b",         // i_block
 	C_ESC "0m"         "p",         // i_fifo
-	C_ESC "38;5;220m"  "l"   C_END, // i_link
+	C_ESC "38;5;233m"  "l"   C_END, // i_link
 
 	C_ESC "38;5;161m"  "s",         // i_sock
-	C_ESC "38;5;220m"  "S",         // i_uid
+	C_ESC "38;5;233m"  "S",         // i_uid
 	C_ESC "38;5;161m"  "s",         // i_uid_exec
-	C_ESC "38;5;220m"  "t",         // i_sticky
-	C_ESC "38;5;220m"  "T"   C_END, // i_sticky_o
+	C_ESC "38;5;233m"  "t",         // i_sticky
+	C_ESC "38;5;233m"  "T"   C_END, // i_sticky_o
 
 	"?",                            // i_unknown
 };
