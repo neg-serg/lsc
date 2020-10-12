@@ -761,8 +761,10 @@ static void fmt_file_list(FILE *out, file_list *v) {
 			if ((size_t)i >= v->len) continue;
 			file_info *fi = fv_index(v, i);
 			fmt_file(out, v, fi);
-			int p = g.columns[x] - widths[i] + padding;
-			while (p--) putc(' ', out);
+			if (x != g.x - 1) {
+				int p = g.columns[x] - widths[i] + padding;
+				while (p--) putc(' ', out);
+			}
 			fi_free(fi);
 		}
 		putc('\n', out);
