@@ -437,7 +437,7 @@ static void fmt_strmode(FILE *out, const mode_t mode) {
 	fputs(mode&S_IWOTH ? C_WRITE : C_NONE, out);
 	fputs(mode&S_ISVTX ? mode&S_IXOTH ? C_STICKY : C_STICKY_O
 	                   : mode&S_IXOTH ? C_EXEC : C_NONE, out);
-	putc(' ', out);
+	fputs("\033[38;5;235m ▏\033[0m",out);
 }
 
 #define SECOND 1
@@ -466,7 +466,7 @@ static void fmt_abstime(FILE *out, const time_t then) {
 	strftime(buf, sizeof(buf), fmt, &tm);
 	fputs(C_DAY, out);
 	fputs(buf, out);
-	putc(' ', out);
+	fputs("\033[38;5;235m ▏\033[0m",out);
 }
 
 static void fmt3(char b[static 3], int x) {
@@ -479,10 +479,12 @@ static void fmt_reltime(FILE *out, const time_t then) {
 	time_t diff = now - then;
 	if (diff < 0) {
 		fputs(C_SECOND " 0s " C_END, out);
+		fputs("\033[38;5;235m ▏\033[0m",out);
 		return;
 	}
 	if (diff <= SECOND) {
 		fputs(C_SECOND "<1s " C_END, out);
+		fputs("\033[38;5;235m ▏\033[0m",out);
 		return;
 	}
 	char b[4] = "  0s";
@@ -512,6 +514,7 @@ static void fmt_reltime(FILE *out, const time_t then) {
 	fmt3(b, diff);
 	fwrite(b+1, 1, 3, out);
 	putc(' ', out);
+	fputs("\033[38;5;235m ▏\033[0m",out);
 }
 
 static const char *const C_SIZES[7] = { "B", "K", "M", "G", "T", "P", "E" };
